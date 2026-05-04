@@ -1,0 +1,78 @@
+<% provide(:title, "Customer Manager — SolarIQ+") %>
+
+<%= render "shared/page_header",
+           title: "Customer Manager",
+           subtitle: "Customers under #{Current.effective_organization.name}." %>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-md">
+  <div class="lg:col-span-2 bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden">
+    <table class="w-full text-label-md">
+      <thead class="bg-surface-container-low text-on-surface-variant text-label-sm uppercase">
+        <tr>
+          <th class="text-left px-md py-sm">Customer</th>
+          <th class="text-left px-md py-sm">Sites</th>
+          <th class="text-left px-md py-sm">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant">
+        <% @customers.each do |c| %>
+          <tr class="hover:bg-surface-container-low">
+            <td class="px-md py-sm">
+              <%= link_to c.name, organization_path(c), class: "text-primary hover:underline" %>
+            </td>
+            <td class="px-md py-sm"><%= Site.where(organization_id: c.id).count %></td>
+            <td class="px-md py-sm"><%= l(c.created_at.to_date) %></td>
+          </tr>
+        <% end %>
+        <% if @customers.empty? %>
+          <tr><td colspan="3" class="px-md py-md text-center text-on-surface-variant">No customers yet.</td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <% unless Current.in_view_as? %>
+    <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
+      <h2 class="text-headline-md mb-sm">Add Customer</h2>
+      <%= form_with(url: customer_manager_path, method: :post, class: "space-y-md") do |f| %>
+        <fieldset class="space-y-md">
+          <legend class="text-label-md text-on-surface-variant uppercase">Organization</legend>
+          <div>
+            <label class="block text-label-md mb-xs" for="organization_name">Customer name</label>
+            <input id="organization_name" name="organization[name]" required
+                   class="w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest">
+          </div>
+          <div>
+            <label class="block text-label-md mb-xs" for="organization_logo_url">Logo URL (optional)</label>
+            <input id="organization_logo_url" name="organization[logo_url]" type="url"
+                   class="w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest">
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-md">
+          <legend class="text-label-md text-on-surface-variant uppercase">Initial user</legend>
+          <div>
+            <label class="block text-label-md mb-xs" for="user_email">Primary email</label>
+            <input id="user_email" name="user[email]" type="email" required
+                   class="w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest">
+          </div>
+          <div>
+            <label class="block text-label-md mb-xs" for="user_name">Display name</label>
+            <input id="user_name" name="user[name]"
+                   class="w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest">
+          </div>
+          <div>
+            <label class="block text-label-md mb-xs" for="user_password">Initial password</label>
+            <input id="user_password" name="user[password]" type="password" minlength="6"
+                   class="w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest">
+            <p class="text-label-sm text-on-surface-variant mt-xs">Send via secure channel; user can reset on first login.</p>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-90 w-full">
+          Create Customer
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+</div>

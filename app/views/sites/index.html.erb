@@ -1,0 +1,20 @@
+<% provide(:title, "Sites — SolarIQ+") %>
+
+<%= render "shared/page_header",
+           title: "Sites",
+           subtitle: "All Sites visible to you." %>
+
+<% if @sites.empty? %>
+  <div class="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
+    No Sites visible.
+  </div>
+<% else %>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+    <% @sites.each do |site| %>
+      <%= link_to site_path(site), class: "block bg-surface-container-lowest rounded-lg border border-outline-variant p-md hover:border-primary transition-colors" do %>
+        <h3 class="text-headline-md text-on-surface"><%= site.name %></h3>
+        <p class="text-label-sm text-on-surface-variant mt-xs">Polling every <%= site.polling_interval_seconds %>s</p>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

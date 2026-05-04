@@ -1,0 +1,5 @@
+<% provide(:title, "Edit #{@site.name} — SolarIQ+") %>
+<%= render "shared/page_header",
+           title: "Edit #{@site.name}",
+           subtitle: "Changes to gateway IP, device credentials, and polling interval are audited." %>
+<%= render "form", site: @site %>

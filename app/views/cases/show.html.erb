@@ -1,0 +1,45 @@
+<% provide(:title, "#{@case.subject} — SolarIQ+") %>
+
+<%
+  actions = capture do
+    if !@case.escalated_to_maverick? && !Current.in_view_as?
+      concat(button_to "Escalate to Maverick", escalate_case_path(@case),
+                       method: :post,
+                       class: "px-md py-sm rounded-md bg-secondary text-on-secondary text-label-md hover:opacity-90",
+                       form: { class: "inline" })
+    end
+  end
+%>
+
+<%= render "shared/page_header",
+           title: @case.subject,
+           subtitle: "Site: #{@site.name} • Status: #{@case.status.humanize} • Opened by #{@case.opened_by.display_name}",
+           actions: actions %>
+
+<% if @case.escalated_to_maverick? %>
+  <div class="mb-md p-md rounded-md bg-secondary-container text-on-secondary-container">
+    <span class="material-symbols-outlined align-middle">flag</span>
+    Escalated to Maverick on <%= l(@case.escalated_at, format: :long) %>.
+  </div>
+<% end %>
+
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md mb-md">
+  <h2 class="text-headline-md mb-sm">Notes</h2>
+  <% if @case.notes.blank? %>
+    <p class="text-on-surface-variant">No notes yet.</p>
+  <% else %>
+    <pre class="whitespace-pre-wrap text-data-mono"><%= @case.notes %></pre>
+  <% end %>
+</div>
+
+<% unless Current.in_view_as? %>
+  <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
+    <h2 class="text-headline-md mb-sm">Add a note</h2>
+    <%= form_with(url: add_note_case_path(@case), method: :post, class: "space-y-md") do |f| %>
+      <%= f.text_area :body, rows: 4, required: true,
+                      placeholder: "Append a note (timestamped automatically; cannot be edited).",
+                      class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest" %>
+      <%= f.submit "Add note", class: "px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-90" %>
+    <% end %>
+  </div>
+<% end %>

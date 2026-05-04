@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= content_for(:title) || "SolarIQ+" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="SolarIQ+">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+  </head>
+
+  <body class="bg-background text-on-background font-sans">
+    <% if user_signed_in? %>
+      <%= render "shared/view_as_banner" %>
+
+      <div class="flex min-h-screen">
+        <%= render "shared/sidebar" %>
+
+        <main class="flex-1 ml-0 md:ml-64 p-margin pb-24 md:pb-margin">
+          <% if flash[:notice].present? %>
+            <div class="mb-md p-md rounded-md bg-primary-fixed text-on-primary-fixed-variant"><%= flash[:notice] %></div>
+          <% end %>
+          <% if flash[:alert].present? %>
+            <div class="mb-md p-md rounded-md bg-error-container text-on-error-container"><%= flash[:alert] %></div>
+          <% end %>
+
+          <%= yield %>
+        </main>
+      </div>
+
+      <%= render "shared/mobile_bottom_nav" %>
+    <% else %>
+      <main class="min-h-screen flex items-center justify-center p-margin">
+        <%= yield %>
+      </main>
+    <% end %>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+<%# locals: site: %>
+<%= form_with(model: site, class: "space-y-md max-w-2xl") do |f| %>
+  <% if site.errors.any? %>
+    <div class="bg-error-container text-on-error-container p-md rounded-md">
+      <%= pluralize(site.errors.count, "error") %> prevented saving:
+      <ul class="list-disc list-inside mt-xs">
+        <% site.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, class: "block text-label-md mb-xs" %>
+    <%= f.text_field :name, required: true,
+                     class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest" %>
+  </div>
+
+  <div>
+    <%= f.label :gateway_ip, "Gateway IP", class: "block text-label-md mb-xs" %>
+    <%= f.text_field :gateway_ip,
+                     class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest" %>
+    <p class="text-label-sm text-on-surface-variant mt-xs">Audited on change.</p>
+  </div>
+
+  <div>
+    <%= f.label :device_credentials_encrypted, "Device credentials (encrypted blob)", class: "block text-label-md mb-xs" %>
+    <%= f.text_area :device_credentials_encrypted, rows: 3,
+                     class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest font-mono text-data-mono" %>
+    <p class="text-label-sm text-on-surface-variant mt-xs">Audited on change.</p>
+  </div>
+
+  <div>
+    <%= f.label :polling_interval_seconds, "Polling interval (seconds)", class: "block text-label-md mb-xs" %>
+    <%= f.number_field :polling_interval_seconds, min: 1, required: true,
+                       class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest" %>
+    <p class="text-label-sm text-on-surface-variant mt-xs">Audited on change.</p>
+  </div>
+
+  <%= f.hidden_field :organization_id %>
+
+  <div class="flex items-center gap-sm">
+    <%= f.submit class: "px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-90" %>
+    <%= link_to "Cancel", (site.persisted? ? site_path(site) : dashboard_path),
+                class: "px-md py-sm rounded-md border border-outline text-on-surface text-label-md hover:bg-surface-container" %>
+  </div>
+<% end %>

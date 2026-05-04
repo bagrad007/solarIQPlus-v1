@@ -1,0 +1,37 @@
+<% provide(:title, "New Case — SolarIQ+") %>
+<%= render "shared/page_header",
+           title: "New Case",
+           subtitle: @site ? "On Site #{@site.name}" : "Pick the affected Site." %>
+
+<%= form_with(model: @case, class: "space-y-md max-w-2xl") do |f| %>
+  <% if @case.errors.any? %>
+    <div class="bg-error-container text-on-error-container p-md rounded-md">
+      <ul class="list-disc list-inside">
+        <% @case.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :site_id, "Site", class: "block text-label-md mb-xs" %>
+    <% if @site %>
+      <%= f.hidden_field :site_id %>
+      <div class="px-md py-sm rounded-md border border-outline bg-surface-container-low"><%= @site.name %></div>
+    <% else %>
+      <%= f.collection_select :site_id, @sites, :id, :name,
+                              { prompt: "Choose a Site" },
+                              { class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest" } %>
+    <% end %>
+  </div>
+
+  <div>
+    <%= f.label :subject, class: "block text-label-md mb-xs" %>
+    <%= f.text_field :subject, required: true,
+                     class: "w-full px-md py-sm rounded-md border border-outline bg-surface-container-lowest" %>
+  </div>
+
+  <div class="flex items-center gap-sm">
+    <%= f.submit "Open Case", class: "px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-90" %>
+    <%= link_to "Cancel", cases_path, class: "px-md py-sm rounded-md border border-outline text-on-surface text-label-md hover:bg-surface-container" %>
+  </div>
+<% end %>

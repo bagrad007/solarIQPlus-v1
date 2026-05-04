@@ -1,0 +1,53 @@
+<% content_for :title, "Log in — SolarIQ+" %>
+
+<div class="w-full max-w-[28rem]">
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-md p-xl">
+    <div class="mb-lg text-center">
+      <h1 class="text-headline-lg text-primary">SolarIQ+</h1>
+      <p class="mt-sm text-body-md text-on-surface-variant">Sign in to continue.</p>
+    </div>
+
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-md" }) do |f| %>
+      <% if flash[:alert].present? %>
+        <div class="p-md rounded-sm bg-error-container text-on-error-container text-body-md">
+          <%= flash[:alert] %>
+        </div>
+      <% end %>
+
+      <div>
+        <%= f.label :email, class: "block text-label-md text-on-surface mb-xs" %>
+        <%= f.email_field :email,
+              autofocus: true,
+              autocomplete: "email",
+              class: "w-full rounded-sm border border-outline bg-surface-container-lowest px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary" %>
+      </div>
+
+      <div>
+        <%= f.label :password, class: "block text-label-md text-on-surface mb-xs" %>
+        <%= f.password_field :password,
+              autocomplete: "current-password",
+              class: "w-full rounded-sm border border-outline bg-surface-container-lowest px-md py-sm text-body-md text-on-surface focus:outline-none focus:border-primary" %>
+      </div>
+
+      <% if devise_mapping.rememberable? %>
+        <label class="flex items-center gap-sm text-label-md text-on-surface-variant">
+          <%= f.check_box :remember_me, class: "rounded-sm border-outline" %>
+          <span>Remember me</span>
+        </label>
+      <% end %>
+
+      <%= f.submit "Log in", class: "w-full rounded-sm bg-primary px-md py-sm text-on-primary text-label-md hover:bg-primary-container transition-colors cursor-pointer" %>
+    <% end %>
+
+    <% if devise_mapping.recoverable? && controller_name != "passwords" %>
+      <div class="mt-lg text-center">
+        <%= link_to "Forgot your password?", new_password_path(resource_name),
+              class: "text-label-md text-primary hover:underline" %>
+      </div>
+    <% end %>
+  </div>
+
+  <p class="mt-md text-center text-label-sm text-on-surface-variant">
+    Maverick Dynamics &mdash; Industrial Monitoring
+  </p>
+</div>

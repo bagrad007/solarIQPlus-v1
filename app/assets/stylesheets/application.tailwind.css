@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/*
+  Design tokens (Tailwind v4 CSS-first @theme).
+  Translated from the user-provided HTML's tailwind.config block. The token
+  names are deliberately Material 3-style; cross-reference docs/UBIQUITOUS-LANGUAGE.md
+  for visual-system language.
+*/
+@theme {
+  /* Color tokens (M3 palette from the source HTML) */
+  --color-primary: #001F51;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #00337c;
+  --color-on-primary-container: #7d9fee;
+  --color-primary-fixed: #d9e2ff;
+  --color-primary-fixed-dim: #b0c6ff;
+  --color-on-primary-fixed: #001945;
+  --color-on-primary-fixed-variant: #1c448c;
+  --color-inverse-primary: #b0c6ff;
+
+  --color-secondary: #964900;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #ff8928;
+  --color-on-secondary-container: #642f00;
+  --color-secondary-fixed: #ffdcc6;
+  --color-secondary-fixed-dim: #ffb786;
+  --color-on-secondary-fixed: #311300;
+  --color-on-secondary-fixed-variant: #723600;
+
+  --color-tertiary: #002241;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #023864;
+  --color-on-tertiary-container: #7ca3d5;
+  --color-tertiary-fixed: #d2e4ff;
+  --color-tertiary-fixed-dim: #a2c9fe;
+  --color-on-tertiary-fixed: #001c37;
+  --color-on-tertiary-fixed-variant: #1c4875;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-surface: #f9f9fc;
+  --color-surface-bright: #f9f9fc;
+  --color-surface-dim: #dadadc;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f6;
+  --color-surface-container: #eeeef0;
+  --color-surface-container-high: #e8e8ea;
+  --color-surface-container-highest: #e2e2e5;
+  --color-surface-variant: #e2e2e5;
+  --color-surface-tint: #395ca6;
+  --color-on-surface: #1a1c1e;
+  --color-on-surface-variant: #434651;
+  --color-inverse-surface: #2f3133;
+  --color-inverse-on-surface: #f0f0f3;
+
+  --color-background: #f9f9fc;
+  --color-on-background: #1a1c1e;
+
+  --color-outline: #747782;
+  --color-outline-variant: #c4c6d3;
+
+  /* Spacing tokens (literal pixel scale from the source HTML) */
+  --spacing-unit: 4px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-gutter: 16px;
+  --spacing-lg: 24px;
+  --spacing-margin: 24px;
+  --spacing-xl: 40px;
+
+  /* Sharp radii (deliberate; matches the design system's chrome) */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.125rem; /* alias so default `rounded-md` matches */
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.75rem;
+  --radius-full: 9999px; /* Keep Tailwind default for true circles (avatars, status dots) */
+
+  /* Type scale: every named role maps to Inter at a specific weight/size */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display-lg: "Inter", sans-serif;
+  --font-headline-lg: "Inter", sans-serif;
+  --font-headline-md: "Inter", sans-serif;
+  --font-body-lg: "Inter", sans-serif;
+  --font-body-md: "Inter", sans-serif;
+  --font-label-md: "Inter", sans-serif;
+  --font-label-sm: "Inter", sans-serif;
+  --font-data-mono: "Inter", sans-serif;
+
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 56px;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 500;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 600;
+
+  --text-data-mono: 14px;
+  --text-data-mono--line-height: 20px;
+  --text-data-mono--font-weight: 400;
+}
+
+/* Material Symbols Outlined: keep the variation settings consistent */
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* Hide scrollbars on horizontal-scroll rails (utility from source HTML) */
+.scrolling-hide::-webkit-scrollbar { display: none; }
+.scrolling-hide { -ms-overflow-style: none; scrollbar-width: none; }

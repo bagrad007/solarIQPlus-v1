@@ -1,0 +1,17 @@
+<% if Current.in_view_as? %>
+  <div class="bg-secondary-container text-on-secondary-container px-margin py-sm flex items-center justify-between sticky top-0 z-50 border-b border-outline-variant">
+    <div class="flex items-center gap-sm">
+      <span class="material-symbols-outlined">visibility</span>
+      <span class="text-label-md">
+        Inspecting <strong><%= Current.effective_organization&.name || "an organization" %></strong> &mdash;
+        exit view-as before making changes.
+      </span>
+    </div>
+    <%= button_to admin_view_as_path,
+                  method: :delete,
+                  class: "px-md py-xs rounded-md bg-on-secondary-container text-secondary-container text-label-md hover:opacity-90",
+                  form: { class: "inline" } do %>
+      Exit view-as
+    <% end %>
+  </div>
+<% end %>

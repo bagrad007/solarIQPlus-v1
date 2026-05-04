@@ -1,0 +1,53 @@
+<% provide(:title, "Partners — SolarIQ+") %>
+
+<%= render "shared/page_header",
+           title: "Partners",
+           subtitle: "Status of every Partner across the Maverick network." %>
+
+<% if @partner_summaries.empty? %>
+  <div class="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
+    No Partners yet. Seed data or create one in the console.
+  </div>
+<% else %>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+    <% @partner_summaries.each do |s| %>
+      <div class="bg-surface-container-lowest rounded-lg border border-outline-variant hover:border-primary transition-colors">
+        <%= link_to organization_path(s[:org]), class: "block p-md" do %>
+          <div class="flex items-center justify-between mb-md">
+            <h3 class="text-headline-md text-on-surface"><%= s[:org].name %></h3>
+            <% if s[:critical] > 0 %>
+              <span class="px-sm py-1 rounded-full bg-error-container text-on-error-container text-label-sm"><%= s[:critical] %> critical</span>
+            <% elsif s[:warn] > 0 %>
+              <span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-sm"><%= s[:warn] %> warn</span>
+            <% else %>
+              <span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-label-sm">healthy</span>
+            <% end %>
+          </div>
+          <dl class="grid grid-cols-3 gap-sm text-center">
+            <div>
+              <dt class="text-label-sm text-on-surface-variant uppercase">Customers</dt>
+              <dd class="text-headline-md mt-xs"><%= s[:customer_count] %></dd>
+            </div>
+            <div>
+              <dt class="text-label-sm text-on-surface-variant uppercase">Open cases</dt>
+              <dd class="text-headline-md mt-xs"><%= s[:open_cases] %></dd>
+            </div>
+            <div>
+              <dt class="text-label-sm text-on-surface-variant uppercase">Critical/24h</dt>
+              <dd class="text-headline-md mt-xs"><%= s[:critical] %></dd>
+            </div>
+          </dl>
+        <% end %>
+        <% if current_user.maverick_admin? %>
+          <div class="px-md py-sm border-t border-outline-variant flex justify-end">
+            <%= button_to "View as #{s[:org].name}",
+                          admin_view_as_path(org_id: s[:org].id),
+                          method: :post,
+                          class: "text-label-sm text-primary hover:underline cursor-pointer",
+                          form: { class: "inline" } %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

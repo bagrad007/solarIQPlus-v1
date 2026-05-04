@@ -1,0 +1,26 @@
+<%# locals: values: [] %>
+<%
+  values = Array(values).map(&:to_f)
+  width  = 600
+  height = 80
+  if values.empty?
+    points = ""
+    max_v  = 1
+  else
+    max_v   = [values.max, 1].max
+    spacing = values.size > 1 ? width.to_f / (values.size - 1) : 0
+    points  = values.each_with_index.map { |v, i|
+      x = (i * spacing).round(2)
+      y = (height - (v / max_v) * height).round(2)
+      "#{x},#{y}"
+    }.join(" ")
+  end
+%>
+<svg viewBox="0 0 <%= width %> <%= height %>" preserveAspectRatio="none" class="w-full h-20">
+  <% if values.any? %>
+    <polyline points="<%= points %>" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
+    <polygon points="0,<%= height %> <%= points %> <%= width %>,<%= height %>" fill="var(--color-primary-fixed)" opacity="0.4"/>
+  <% else %>
+    <line x1="0" y1="<%= height / 2 %>" x2="<%= width %>" y2="<%= height / 2 %>" stroke="var(--color-outline-variant)" stroke-dasharray="4 4"/>
+  <% end %>
+</svg>

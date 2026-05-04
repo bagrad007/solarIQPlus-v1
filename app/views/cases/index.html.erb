@@ -1,0 +1,48 @@
+<% provide(:title, "Cases — SolarIQ+") %>
+
+<%
+  actions = capture do
+    unless Current.in_view_as?
+      concat(link_to "New Case", new_case_path,
+             class: "px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-90 inline-flex items-center gap-xs")
+    end
+  end
+%>
+
+<%= render "shared/page_header",
+           title: "Cases",
+           subtitle: "All Cases visible to you.",
+           actions: actions %>
+
+<% if @cases.empty? %>
+  <div class="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
+    No cases visible.
+  </div>
+<% else %>
+  <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden">
+    <table class="w-full text-label-md">
+      <thead class="bg-surface-container-low text-on-surface-variant text-label-sm uppercase">
+        <tr>
+          <th class="text-left px-md py-sm">Subject</th>
+          <th class="text-left px-md py-sm">Site</th>
+          <th class="text-left px-md py-sm">Status</th>
+          <th class="text-left px-md py-sm">Escalated</th>
+          <th class="text-left px-md py-sm">Opened</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant">
+        <% @cases.each do |c| %>
+          <tr class="hover:bg-surface-container-low">
+            <td class="px-md py-sm">
+              <%= link_to c.subject, case_path(c), class: "text-primary hover:underline" %>
+            </td>
+            <td class="px-md py-sm"><%= c.site&.name %></td>
+            <td class="px-md py-sm"><%= c.status.humanize %></td>
+            <td class="px-md py-sm"><%= c.escalated_to_maverick? ? "Yes" : "—" %></td>
+            <td class="px-md py-sm"><%= time_ago_in_words(c.created_at) %> ago</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

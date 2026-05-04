@@ -1,0 +1,41 @@
+<aside class="hidden md:flex fixed left-0 top-0 h-screen w-64 flex-col bg-surface-container-low border-r border-outline-variant z-40">
+  <div class="px-margin py-margin border-b border-outline-variant flex items-center gap-sm">
+    <% if Current.effective_logo_url.present? %>
+      <img src="<%= Current.effective_logo_url %>" alt="<%= Current.effective_organization&.name %>" class="h-10 w-auto max-w-[180px] object-contain">
+    <% else %>
+      <div class="text-headline-md font-semibold text-primary"><%= Current.effective_organization&.name || "SolarIQ+" %></div>
+    <% end %>
+  </div>
+
+  <nav class="flex-1 px-sm py-md overflow-y-auto">
+    <ul class="space-y-xs">
+      <% nav_items.each do |item| %>
+        <li>
+          <%= link_to item[:path], class: "flex items-center gap-sm px-md py-sm rounded-md text-label-md text-on-surface hover:bg-surface-container #{'bg-primary-fixed text-on-primary-fixed-variant' if current_page?(item[:path])}" do %>
+            <span class="material-symbols-outlined"><%= item[:icon] %></span>
+            <span><%= item[:label] %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+
+  <div class="px-margin py-md border-t border-outline-variant">
+    <div class="flex items-center gap-sm mb-sm">
+      <div class="h-8 w-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-semibold">
+        <%= current_user.display_name.to_s[0, 1].upcase %>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-label-md truncate"><%= current_user.display_name %></div>
+        <div class="text-label-sm text-on-surface-variant truncate"><%= current_user.role.humanize %></div>
+      </div>
+    </div>
+    <%= button_to destroy_user_session_path,
+                  method: :delete,
+                  class: "w-full text-left flex items-center gap-sm px-md py-sm rounded-md text-label-md text-on-surface-variant hover:bg-surface-container",
+                  form: { class: "block" } do %>
+      <span class="material-symbols-outlined">logout</span>
+      <span>Sign out</span>
+    <% end %>
+  </div>
+</aside>

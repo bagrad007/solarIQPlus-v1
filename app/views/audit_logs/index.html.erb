@@ -1,0 +1,40 @@
+<% provide(:title, "Audit Logs — SolarIQ+") %>
+
+<%= render "shared/page_header",
+           title: "Audit Logs",
+           subtitle: "Configuration changes across all Customers (newest first, last 500)." %>
+
+<% if @logs.empty? %>
+  <div class="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
+    No audit log entries yet.
+  </div>
+<% else %>
+  <div class="bg-surface-container-lowest rounded-lg border border-outline-variant overflow-hidden">
+    <table class="w-full text-label-md">
+      <thead class="bg-surface-container-low text-on-surface-variant text-label-sm uppercase">
+        <tr>
+          <th class="text-left px-md py-sm">When</th>
+          <th class="text-left px-md py-sm">Actor</th>
+          <th class="text-left px-md py-sm">Auditable</th>
+          <th class="text-left px-md py-sm">Field</th>
+          <th class="text-left px-md py-sm">Old → New</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant font-mono text-data-mono">
+        <% @logs.each do |log| %>
+          <tr class="hover:bg-surface-container-low">
+            <td class="px-md py-sm whitespace-nowrap"><%= l(log.created_at, format: :long) %></td>
+            <td class="px-md py-sm"><%= log.actor.display_name %></td>
+            <td class="px-md py-sm"><%= log.auditable_type %> #<%= log.auditable_id.first(8) %></td>
+            <td class="px-md py-sm"><%= log.field_name %></td>
+            <td class="px-md py-sm">
+              <span class="text-on-surface-variant"><%= log.old_value.presence || "∅" %></span>
+              →
+              <span><%= log.new_value.presence || "∅" %></span>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

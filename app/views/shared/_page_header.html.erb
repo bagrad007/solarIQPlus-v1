@@ -1,0 +1,17 @@
+<%
+  subtitle ||= local_assigns[:subtitle]
+  actions  ||= local_assigns[:actions]
+%>
+<header class="flex items-end justify-between flex-wrap gap-md mb-margin">
+  <div>
+    <h1 class="text-headline-lg text-on-background"><%= title %></h1>
+    <% if subtitle.present? %>
+      <p class="text-body-md text-on-surface-variant mt-xs"><%= subtitle %></p>
+    <% end %>
+  </div>
+  <% if actions.present? %>
+    <div class="flex items-center gap-sm">
+      <%= actions %>
+    </div>
+  <% end %>
+</header>
