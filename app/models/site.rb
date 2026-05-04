@@ -29,6 +29,11 @@ class Site < ApplicationRecord
     AUDITED_FIELDS.each do |field|
       next unless saved_change_to_attribute?(field)
       old_v, new_v = saved_change_to_attribute(field)
+      # Form submissions can flip a field from nil to "" (or vice versa) without
+      # any meaningful change; ActiveModel still flags it as a saved change. We
+      # normalize to string and skip the no-op so audit_logs only records edits
+      # that actually altered the persisted value.
+      next if old_v.to_s == new_v.to_s
       AuditLog.create!(
         organization_id: organization_id,
         actor_user_id:   actor_id,

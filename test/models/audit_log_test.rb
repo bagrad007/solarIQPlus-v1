@@ -33,4 +33,14 @@ class AuditLogTest < ActiveSupport::TestCase
     assert_raises(ActiveRecord::StatementInvalid) { log.update!(field_name: "x") }
     assert_raises(ActiveRecord::StatementInvalid) { log.destroy }
   end
+
+  test "nil to empty-string flip does not write an audit_log" do
+    # The seeded site has device_credentials_encrypted = nil. Submitting a form
+    # with that field blank serializes to "", and ActiveModel flags nil -> "" as
+    # a saved change. We must not treat that as an audited edit.
+    assert_nil @site_a.device_credentials_encrypted
+    assert_no_difference -> { AuditLog.count } do
+      @site_a.update!(device_credentials_encrypted: "")
+    end
+  end
 end
