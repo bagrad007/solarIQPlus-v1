@@ -9,7 +9,7 @@
 
 require "securerandom"
 
-PASSWORD = "ChangeMe123!"
+PASSWORD = "password"
 
 def make_id(seed)
   base = Digest::SHA256.hexdigest(seed)
@@ -64,13 +64,15 @@ ActiveRecord::Base.transaction do
 
   users = {}
   user_specs.each do |spec|
-    users[spec[:key]] = User.find_or_create_by!(id: make_id("user-#{spec[:key]}")) do |u|
+    user = User.find_or_create_by!(id: make_id("user-#{spec[:key]}")) do |u|
       u.organization_id = spec[:org].id
       u.role            = spec[:role]
       u.email           = spec[:email]
       u.name            = spec[:name]
       u.password        = PASSWORD
     end
+    user.update!(password: PASSWORD, password_confirmation: PASSWORD)
+    users[spec[:key]] = user
   end
 
   site_specs = [
@@ -102,9 +104,10 @@ ActiveRecord::Base.transaction do
     end
   end
 
-  Telemetry.delete_all if Telemetry.where("recorded_at > ?", 1.year.ago).count > 0
   cutoff = 30.days.ago
   now    = Time.current
+  demo_site_ids = sites.values.map(&:id)
+  Telemetry.where(site_id: demo_site_ids).where(recorded_at: cutoff..).delete_all
 
   site_specs.each do |spec|
     site = sites[spec[:key]]

@@ -1441,7 +1441,7 @@ CREATE TRIGGER trg_cases_populate_org_path BEFORE INSERT OR UPDATE OF organizati
 -- Name: cases trg_cases_status_machine; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER trg_cases_status_machine BEFORE UPDATE OF status ON public.cases FOR EACH ROW EXECUTE FUNCTION app.enforce_case_status_machine();
+CREATE TRIGGER trg_cases_status_machine BEFORE INSERT OR UPDATE OF status ON public.cases FOR EACH ROW EXECUTE FUNCTION app.enforce_case_status_machine();
 
 
 --
@@ -1764,6 +1764,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260505124000'),
 ('20260504151600'),
 ('20260504151500'),
 ('20260504151400'),

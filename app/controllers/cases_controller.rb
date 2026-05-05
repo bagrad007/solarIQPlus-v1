@@ -54,6 +54,6 @@ class CasesController < ApplicationController
   end
 
   def case_params
-    params.require(:case).permit(:site_id, :subject, :status)
+    params.require(:case).permit(:site_id, :subject)
   end
 end

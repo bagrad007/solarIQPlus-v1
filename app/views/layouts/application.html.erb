@@ -39,6 +39,8 @@
             <div class="mb-md p-md rounded-md bg-error-container text-on-error-container"><%= flash[:alert] %></div>
           <% end %>
 
+          <%= render "shared/breadcrumb_trail" %>
+
           <%= yield %>
         </main>
       </div>

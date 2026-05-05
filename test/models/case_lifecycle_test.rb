@@ -25,6 +25,18 @@ class CaseLifecycleTest < ActiveSupport::TestCase
     assert_not_nil @case.reload.closed_at
   end
 
+  test "creating a closed case stamps closed_at automatically" do
+    closed_case = Case.create!(
+      site:         @site_a,
+      organization: @northwind,
+      opened_by:    @acme_user,
+      subject:      "Already closed case",
+      status:       "closed"
+    )
+
+    assert_not_nil closed_case.reload.closed_at
+  end
+
   test "closed is terminal — cannot transition back" do
     @case.update!(status: "closed")
     assert_raises(ActiveRecord::StatementInvalid) do

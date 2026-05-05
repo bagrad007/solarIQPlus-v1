@@ -1,6 +1,8 @@
 <% provide(:title, "#{@case.subject} — SolarIQ+") %>
 
 <%
+  opened_by_name = @case.opened_by&.display_name || "Unavailable in current scope"
+
   actions = capture do
     if !@case.escalated_to_maverick? && !Current.in_view_as?
       concat(button_to "Escalate to Maverick", escalate_case_path(@case),
@@ -13,7 +15,7 @@
 
 <%= render "shared/page_header",
            title: @case.subject,
-           subtitle: "Site: #{@site.name} • Status: #{@case.status.humanize} • Opened by #{@case.opened_by.display_name}",
+           subtitle: "Site: #{@site.name} • Status: #{@case.status.humanize} • Opened by #{opened_by_name}",
            actions: actions %>
 
 <% if @case.escalated_to_maverick? %>
