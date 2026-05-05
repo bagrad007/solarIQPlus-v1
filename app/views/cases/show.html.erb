@@ -45,3 +45,5 @@
     <% end %>
   </div>
 <% end %>
+
+<%= render "shared/ai_energy_analyst_widget", context_label: customer_scope_label if customer_scope_present? %>

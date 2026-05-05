@@ -1,0 +1,92 @@
+<%# Floating "AI Energy Analyst" demo widget.
+    Render this partial only inside the "Customer scope" of the app — see
+    `customer_scope_present?` in ApplicationHelper for the current rule.
+    Locals (optional):
+      context_label : String shown in the panel header (e.g. site name).
+%>
+<%
+  context_label = local_assigns.fetch(:context_label) { "your fleet" }
+%>
+<div class="hidden md:block"
+     data-controller="ai-energy-analyst"
+     data-ai-energy-analyst-url-value="<%= demo_energy_analyst_message_path %>"
+     data-ai-energy-analyst-csrf-value="<%= form_authenticity_token %>"
+     data-ai-energy-analyst-context-value="<%= context_label %>">
+
+  <%# Floating action button (FAB) — bottom-right %>
+  <button type="button"
+          data-ai-energy-analyst-target="fab"
+          data-action="click->ai-energy-analyst#toggle"
+          class="fixed bottom-6 right-6 z-50 inline-flex items-center gap-sm rounded-full bg-primary text-on-primary px-md py-sm shadow-lg hover:opacity-95 transition-opacity"
+          aria-label="Open AI Energy Analyst">
+    <span class="material-symbols-outlined" aria-hidden="true">smart_toy</span>
+    <span class="text-label-md">AI Analyst</span>
+  </button>
+
+  <%# Panel — anchored bottom-right with smooth scale/opacity transition.
+      Always display:flex so flex-col + flex-1 actually constrain children;
+      visibility is controlled by opacity + scale + pointer-events. %>
+  <section data-ai-energy-analyst-target="panel"
+           data-open="false"
+           class="fixed bottom-24 right-6 z-50 flex flex-col w-[420px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-8rem)] origin-bottom-right scale-95 opacity-0 pointer-events-none transition-all duration-150 ease-out bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xl overflow-hidden"
+           role="dialog"
+           aria-label="AI Energy Analyst">
+
+    <header class="flex items-center justify-between px-md py-sm border-b border-outline-variant">
+      <div class="flex items-center gap-sm">
+        <span class="material-symbols-outlined text-primary" aria-hidden="true">smart_toy</span>
+        <div>
+          <div class="text-label-md font-semibold text-on-surface">AI Energy Analyst</div>
+          <div class="text-label-sm text-on-surface-variant">
+            Demo · grounded on Company A telemetry
+          </div>
+        </div>
+      </div>
+      <button type="button"
+              data-action="click->ai-energy-analyst#close"
+              class="p-1 rounded-md hover:bg-surface-container"
+              aria-label="Close panel">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <%# `min-h-0` is required so this flex child can shrink below its content
+        and `overflow-y-auto` actually scrolls instead of expanding the panel. %>
+    <div data-ai-energy-analyst-target="messages"
+         class="flex-1 min-h-0 overflow-y-auto py-md flex flex-col gap-md"
+         role="log"
+         aria-live="polite">
+    </div>
+
+    <div data-ai-energy-analyst-target="starters" class="px-md pb-sm flex flex-wrap gap-xs">
+      <% [
+        "Analyze my last 30 days",
+        "Find inefficiencies",
+        "Show fault trends",
+        "Maintenance summary"
+      ].each do |prompt| %>
+        <button type="button"
+                data-action="click->ai-energy-analyst#starter"
+                data-prompt="<%= prompt %>"
+                class="text-label-sm px-sm py-1 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors">
+          <%= prompt %>
+        </button>
+      <% end %>
+    </div>
+
+    <%= form_with url: "#", method: :post,
+                  data: { "ai-energy-analyst-target": "form", action: "submit->ai-energy-analyst#submit" },
+                  class: "border-t border-outline-variant px-md py-sm flex items-center gap-sm" do |f| %>
+      <%= text_field_tag :message, nil,
+                         placeholder: "Ask the analyst…",
+                         autocomplete: "off",
+                         data: { "ai-energy-analyst-target": "input" },
+                         class: "flex-1 px-md py-sm rounded-md border border-outline bg-surface-container-lowest text-body-md focus:outline-none focus:border-primary" %>
+      <button type="submit"
+              data-ai-energy-analyst-target="send"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-primary text-on-primary hover:opacity-95 disabled:opacity-50">
+        <span class="material-symbols-outlined">send</span>
+      </button>
+    <% end %>
+  </section>
+</div>

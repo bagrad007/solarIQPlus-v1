@@ -38,4 +38,33 @@ module ApplicationHelper
       { label: "Cases",     path: cases_path,     icon: "support_agent" }
     ]
   end
+
+  # True when the current page is "about" exactly one Customer organization
+  # — the AI Energy Analyst widget renders only here. Roll-up pages
+  # (Maverick partner list, Partner customer list, plain dashboard index)
+  # never have a single Customer in scope, so the widget stays hidden.
+  #
+  # The widget partial accepts an optional `context_label` local; callers
+  # pass the most specific name available (site → customer org name).
+  def customer_scope_present?
+    if defined?(@site) && @site.respond_to?(:organization) && @site.organization&.customer?
+      true
+    elsif defined?(@case) && @case&.site&.organization&.customer?
+      true
+    elsif defined?(@target) && @target.respond_to?(:customer?) && @target.customer?
+      true
+    elsif defined?(@organization) && @organization.respond_to?(:customer?) && @organization.customer?
+      true
+    else
+      false
+    end
+  end
+
+  # Best-effort label for the panel header — falls back to a friendly default.
+  def customer_scope_label
+    return @site.name if defined?(@site) && @site.respond_to?(:name)
+    return @case.site&.name if defined?(@case) && @case&.site&.respond_to?(:name)
+    return @target.name if defined?(@target) && @target.respond_to?(:name)
+    "your fleet"
+  end
 end

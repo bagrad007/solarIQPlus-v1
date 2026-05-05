@@ -27,6 +27,10 @@ Rails.application.routes.draw do
     namespace :admin do
       resource :view_as, only: [:create, :destroy], controller: "view_as"
     end
+
+    namespace :demo, defaults: { format: :json } do
+      post "energy_analyst/message", to: "energy_analyst#message", as: :energy_analyst_message
+    end
   end
 
   devise_scope :user do

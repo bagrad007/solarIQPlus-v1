@@ -6,3 +6,6 @@ import { application } from "./application"
 
 import HelloController from "./hello_controller"
 application.register("hello", HelloController)
+
+import AiEnergyAnalystController from "./ai_energy_analyst_controller"
+application.register("ai-energy-analyst", AiEnergyAnalystController)
