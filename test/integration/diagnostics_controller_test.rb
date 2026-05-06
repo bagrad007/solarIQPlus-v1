@@ -110,6 +110,7 @@ class DiagnosticsControllerTest < ActionDispatch::IntegrationTest
     assert payload.key?("import_export_series")
     assert payload.key?("solar_7d_series")
     assert_equal 7, payload["solar_7d_series"].length
+    assert payload.key?("forecast"), "diagnostics payload merges SiteForecast for the React island"
   end
 
   test "show renders forecast tiles and open cases strip when weather is available" do
@@ -121,7 +122,11 @@ class DiagnosticsControllerTest < ActionDispatch::IntegrationTest
     get site_diagnostics_path(@site_a)
 
     assert_response :success
-    assert_select "[data-forecast-tile]", count: 2
+    raw = css_select("[data-diagnostics-mount]").first["data-payload"]
+    payload = JSON.parse(raw)
+    assert payload["forecast"], "forecast is merged into diagnostics payload when weather resolves"
+    assert payload["forecast"].key?("today_kwh")
+    assert payload["forecast"].key?("tomorrow_kwh")
     assert_match(/Open cases on this site/i, response.body)
   ensure
     SitesController.weather_cache = orig_cache

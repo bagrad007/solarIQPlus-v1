@@ -1,0 +1,116 @@
+<%#
+  Locals:
+    result  (AlarmFilter::RESULT)
+    applied (Hash) — applied filter summary, used for sortable header links
+
+  Column visibility cascades on two axes:
+    1. Width (Tailwind responsive utility classes on each <th>/<td>).
+    2. Persona — the Customer and Partner columns are tautological for some
+       viewers (a Customer sees only their own org name; a Partner only sees
+       their own partner) so we suppress them. Computed once here and
+       passed through to each row.
+%>
+<%
+  current_sort = applied[:sort]
+  current_dir  = applied[:dir]
+  next_dir = ->(key) {
+    return "desc" unless current_sort == key
+    current_dir == "asc" ? "desc" : "asc"
+  }
+  arrow = ->(key) {
+    return "" unless current_sort == key
+    current_dir == "asc" ? "▲" : "▼"
+  }
+  sort_link = ->(label, key) {
+    link_to alarms_path(applied.merge(sort: key, dir: next_dir.call(key))),
+            class: "inline-flex items-center gap-xs text-label-sm font-semibold uppercase tracking-wider text-outline hover:text-on-surface transition-colors" do
+      "#{label} <span class=\"text-[10px] opacity-70\">#{arrow.call(key)}</span>".html_safe
+    end
+  }
+
+  effective_org    = Current.effective_organization
+  show_customer_col = !effective_org&.customer?
+  show_partner_col  = effective_org&.maverick?
+
+  # Responsive class cascades. Customer + Partner are hidden until md/lg
+  # respectively because they're secondary context. Acknowledged metadata
+  # is hidden until xl — useful but not actionable for triage.
+  customer_visibility = show_customer_col ? "hidden md:table-cell" : "hidden"
+  partner_visibility  = show_partner_col  ? "hidden lg:table-cell" : "hidden"
+  opened_visibility   = "hidden md:table-cell"
+  ack_by_visibility   = "hidden xl:table-cell"
+  ack_at_visibility   = "hidden xl:table-cell"
+%>
+
+<turbo-frame id="alarms-table" class="block">
+  <% if result.relation.empty? %>
+    <%= render "shared/empty_state",
+               icon:    "notifications_off",
+               title:   applied.except(:sort, :dir, :page).empty? ? "No alarms yet" : "No alarms match your filters",
+               body:    applied.except(:sort, :dir, :page).empty? ? "Cleared alarms are hidden from this list by default." : "Adjust filters or search to broaden the view.",
+               cta:     applied.except(:sort, :dir, :page).empty? ? nil : { label: "Reset filters", href: alarms_path } %>
+  <% else %>
+    <div class="alarms-table-panel overflow-x-auto">
+      <table class="alarms-data-table min-w-full border-collapse text-left" data-testid="alarms-table">
+        <thead>
+          <tr>
+            <th scope="col" class="alarms-data-table__th w-px whitespace-nowrap"><span class="text-label-sm font-semibold uppercase tracking-wider text-outline">Severity</span></th>
+            <th scope="col" class="alarms-data-table__th alarms-data-table__th--code"><%= sort_link.call("Code", "code") %></th>
+            <th scope="col" class="alarms-data-table__th"><%= sort_link.call("Title", "opened_at") %></th>
+            <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap"><%= sort_link.call("Site", "site") %></th>
+            <% if show_customer_col %>
+              <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap <%= customer_visibility %>"><%= sort_link.call("Customer", "customer") %></th>
+            <% end %>
+            <% if show_partner_col %>
+              <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap <%= partner_visibility %>"><span class="text-label-sm font-semibold uppercase tracking-wider text-outline">Partner</span></th>
+            <% end %>
+            <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap <%= opened_visibility %>"><%= sort_link.call("Opened", "opened_at") %></th>
+            <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap <%= ack_by_visibility %>"><span class="text-label-sm font-semibold uppercase tracking-wider text-outline">Ack by</span></th>
+            <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap <%= ack_at_visibility %>"><%= sort_link.call("Ack at", "acknowledged_at") %></th>
+            <th scope="col" class="alarms-data-table__th alarms-data-table__th--nowrap"><%= sort_link.call("Status", "status") %></th>
+            <th scope="col" class="alarms-data-table__th text-end"><span class="text-label-sm font-semibold uppercase tracking-wider text-outline">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody class="alarms-data-table__body">
+          <% result.relation.includes(:site, :code, :acknowledged_by, :cleared_by, organization: :parent).each do |alarm| %>
+            <%= render "alarm_row",
+                       alarm:                alarm,
+                       show_customer_col:    show_customer_col,
+                       show_partner_col:     show_partner_col,
+                       customer_visibility:  customer_visibility,
+                       partner_visibility:   partner_visibility,
+                       opened_visibility:    opened_visibility,
+                       ack_by_visibility:    ack_by_visibility,
+                       ack_at_visibility:    ack_at_visibility %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if result.total_count > result.per_page %>
+      <% total_pages = (result.total_count.to_f / result.per_page).ceil %>
+      <% prev_page = [result.page - 1, 1].max %>
+      <% next_page = [result.page + 1, total_pages].min %>
+      <nav class="alarms-table-pagination mt-md flex items-center justify-between text-label-sm font-semibold uppercase tracking-wider text-on-surface-variant" aria-label="Pagination">
+        <span data-testid="alarms-pagination-summary">
+          Showing <%= ((result.page - 1) * result.per_page) + 1 %>&ndash;<%= [result.page * result.per_page, result.total_count].min %>
+          of <%= result.total_count %>
+        </span>
+        <div class="inline-flex gap-xs">
+          <%= link_to alarms_path(applied.merge(page: prev_page)),
+                      class:    "alarms-page-nav-btn #{result.page <= 1 ? 'alarms-page-nav-btn--disabled' : ''}",
+                      tabindex: (result.page <= 1 ? -1 : nil) do %>
+            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">chevron_left</span>
+            <span class="sr-only">Previous page</span>
+          <% end %>
+          <%= link_to alarms_path(applied.merge(page: next_page)),
+                      class:    "alarms-page-nav-btn #{result.page >= total_pages ? 'alarms-page-nav-btn--disabled' : ''}",
+                      tabindex: (result.page >= total_pages ? -1 : nil) do %>
+            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">chevron_right</span>
+            <span class="sr-only">Next page</span>
+          <% end %>
+        </div>
+      </nav>
+    <% end %>
+  <% end %>
+</turbo-frame>

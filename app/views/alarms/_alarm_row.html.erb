@@ -1,0 +1,125 @@
+<%#
+  Single Alarm row.
+
+  Locals:
+    alarm                (Alarm)
+    show_customer_col    (Boolean) — true when this viewer should see Customer
+    show_partner_col     (Boolean) — true only for Maverick viewers
+    customer_visibility  (String)  — Tailwind responsive utility cascade
+    partner_visibility   (String)  — Tailwind responsive utility cascade
+    opened_visibility    (String)  — "hidden md:table-cell"
+    ack_by_visibility    (String)  — "hidden xl:table-cell"
+    ack_at_visibility    (String)  — "hidden xl:table-cell"
+
+  At small widths, low-priority columns drop out so the most-actionable
+  data (severity, code, title, site, status, actions) stays visible
+  without horizontal scrolling.
+%>
+<%
+  customer = alarm.organization
+  partner  = customer&.parent
+  opened_iso = alarm.opened_at&.iso8601
+  code_label = alarm.code&.label.to_s
+  title_sub  = code_label.present? && code_label.strip != alarm.title.to_s.strip
+%>
+<tr data-testid="alarm-row" data-alarm-id="<%= alarm.id %>"
+    class="alarms-data-table__row group border-b border-outline-variant/30 transition-colors last:border-b-0 hover:bg-surface-container-low">
+  <td class="alarms-data-table__td align-middle">
+    <div class="flex min-w-0 items-center gap-sm whitespace-nowrap">
+      <%= render "severity_dot", severity: alarm.severity, status: alarm.status %>
+      <span class="alarm-severity-label alarm-severity-label--<%= alarm.severity %> text-label-sm font-semibold uppercase"><%= alarm.severity.to_s.titleize %></span>
+    </div>
+  </td>
+  <td class="alarms-data-table__td alarms-data-table__td--code align-middle">
+    <span class="inline-block font-[family-name:var(--font-data-mono)] text-sm font-medium tracking-tight text-primary tabular-nums whitespace-nowrap">
+      <%= alarm.display_code %>
+    </span>
+  </td>
+  <td class="alarms-data-table__td align-middle">
+    <div class="flex min-w-0 flex-col gap-[2px]">
+      <span class="truncate text-body-md font-semibold text-on-surface" title="<%= alarm.title %>"><%= alarm.title %></span>
+      <% if title_sub %>
+        <span class="text-label-sm text-on-surface-variant"><%= code_label %></span>
+      <% end %>
+      <%# On small screens we hide the Opened column, so surface a compact
+          "X ago" hint underneath the title to preserve urgency cues. %>
+      <% if alarm.opened_at %>
+        <span class="text-label-sm text-on-surface-variant md:hidden">
+          <time datetime="<%= opened_iso %>" title="<%= opened_iso %>"><%= time_ago_in_words(alarm.opened_at) %> ago</time>
+        </span>
+      <% end %>
+    </div>
+  </td>
+  <td class="alarms-data-table__td alarms-data-table__td--clip align-middle text-body-md text-on-surface-variant">
+    <%= link_to alarm.site.name, site_path(alarm.site),
+                class: "alarms-data-table__cell-line text-on-surface-variant transition-colors hover:text-primary hover:underline",
+                title: alarm.site.name %>
+  </td>
+  <% if show_customer_col %>
+    <td class="alarms-data-table__td alarms-data-table__td--clip align-middle text-body-md text-on-surface-variant <%= customer_visibility %>">
+      <span class="alarms-data-table__cell-line" title="<%= customer&.name %>"><%= customer&.name %></span>
+    </td>
+  <% end %>
+  <% if show_partner_col %>
+    <td class="alarms-data-table__td alarms-data-table__td--clip align-middle text-body-md text-on-surface-variant <%= partner_visibility %>">
+      <span class="alarms-data-table__cell-line" title="<%= partner&.name %>"><%= partner&.name %></span>
+    </td>
+  <% end %>
+  <td class="alarms-data-table__td alarms-data-table__td--nowrap align-middle text-label-md text-on-surface-variant tabular-nums <%= opened_visibility %>">
+    <% if alarm.opened_at %>
+      <time datetime="<%= opened_iso %>" title="<%= opened_iso %>">
+        <%= time_ago_in_words(alarm.opened_at) %> ago
+      </time>
+    <% else %>
+      &mdash;
+    <% end %>
+  </td>
+  <td class="alarms-data-table__td alarms-data-table__td--clip align-middle text-label-md text-on-surface-variant <%= ack_by_visibility %>">
+    <% if (name = alarm.acknowledged_by&.display_name).present? %>
+      <span class="alarms-data-table__cell-line" title="<%= name %>"><%= name %></span>
+    <% else %>
+      <%= tag.span("—", class: "text-on-surface-variant/60") %>
+    <% end %>
+  </td>
+  <td class="alarms-data-table__td alarms-data-table__td--nowrap align-middle text-label-md text-on-surface-variant tabular-nums <%= ack_at_visibility %>">
+    <% if alarm.acknowledged_at %>
+      <time datetime="<%= alarm.acknowledged_at.iso8601 %>" title="<%= alarm.acknowledged_at.iso8601 %>">
+        <%= time_ago_in_words(alarm.acknowledged_at) %> ago
+      </time>
+    <% else %>
+      <span class="text-on-surface-variant/60">&mdash;</span>
+    <% end %>
+  </td>
+  <td class="alarms-data-table__td alarms-data-table__td--nowrap align-middle">
+    <span class="alarm-pill alarm-pill--<%= alarm.severity %>"><%= alarm.status.humanize %></span>
+  </td>
+  <td class="alarms-data-table__td align-middle text-end">
+    <% unless Current.in_view_as? %>
+      <div class="alarm-row-actions inline-flex justify-end gap-xs">
+        <% if alarm.status_firing? %>
+          <%= button_to acknowledge_alarm_path(alarm),
+                        method: :post,
+                        class:  "alarm-action-btn alarm-action-btn--ghost alarm-action-btn--table",
+                        form:   { class: "inline" },
+                        data:   { testid: "alarm-acknowledge", alarm_id: alarm.id },
+                        title:  "Acknowledge alarm" do %>
+            <span class="material-symbols-outlined alarm-action-btn__icon" aria-hidden="true">visibility</span>
+            <span class="alarm-action-btn__label alarm-action-btn__label--short">Ack</span>
+            <span class="alarm-action-btn__label alarm-action-btn__label--full">Acknowledge</span>
+          <% end %>
+        <% end %>
+        <% unless alarm.status_cleared? %>
+          <%= button_to clear_alarm_path(alarm),
+                        method: :post,
+                        class:  "alarm-action-btn alarm-action-btn--primary alarm-action-btn--table",
+                        form:   { class: "inline" },
+                        data:   { testid: "alarm-clear", alarm_id: alarm.id },
+                        title:  "Clear alarm" do %>
+            <span class="material-symbols-outlined alarm-action-btn__icon" aria-hidden="true">check_circle</span>
+            <span class="alarm-action-btn__label">Clear</span>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </td>
+</tr>

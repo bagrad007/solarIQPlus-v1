@@ -21,7 +21,14 @@
 <% else %>
   <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-lg">
     <% @site_summaries.each do |s| %>
-      <%= link_to site_path(s[:site]), class: "block h-full min-h-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-lg hover:border-primary transition-colors" do %>
+      <%# Stretched-link card: the whole card surface routes to site_path; the
+          corner Edit link (z-10) routes to edit_site_path. Avoids nesting
+          `<a>` tags inside an outer link. %>
+      <div class="group relative flex h-full min-h-0 flex-col bg-surface-container-lowest rounded-lg border border-outline-variant p-lg hover:border-primary transition-colors">
+        <%= link_to "", site_path(s[:site]),
+                    class: "absolute inset-0 rounded-lg",
+                    aria: { label: s[:site].name } %>
+
         <%= render "shared/card_title_and_status", title: s[:site].name do %>
           <% latest = s[:latest] %>
           <% case latest&.alarm_state %>
@@ -40,7 +47,15 @@
             Last reading <%= time_ago_in_words(s[:latest].recorded_at) %> ago
           </p>
         <% end %>
-      <% end %>
+
+        <% unless Current.in_view_as? %>
+          <div class="mt-auto pt-md flex justify-end">
+            <%= link_to "Edit Site", edit_site_path(s[:site]),
+                        class: "relative z-10 inline-flex items-center gap-xs rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-1 text-label-sm text-on-surface hover:bg-surface-container",
+                        aria: { label: "Edit #{s[:site].name}" } %>
+          </div>
+        <% end %>
+      </div>
     <% end %>
   </div>
 <% end %>

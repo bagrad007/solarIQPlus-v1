@@ -1,0 +1,84 @@
+<%#
+  Locals:
+    applied      (Hash) — applied filter summary from AlarmFilter::RESULT
+    alarm_codes  (Relation) — for the Code dropdown
+    sites        (Relation) — for the Site dropdown
+
+  Single-row toolbar: search · severity segment · selects.
+  `show_cleared` is carried via a hidden field (default from URL / filter);
+  there is no in-form toggle for it.
+%>
+<%
+  selected_severities = Array(applied[:severity]).map(&:to_s).reject(&:blank?)
+  show_cleared_on =
+    applied[:show_cleared] == true || %w[1 true on yes].include?(applied[:show_cleared].to_s)
+  effective_org        = Current.effective_organization
+  show_customer_picker = !effective_org&.customer?
+  show_partner_picker  = effective_org&.maverick?
+%>
+
+<%= form_with url: alarms_path,
+              method: :get,
+              local: true,
+              data: { controller: "alarms-search", testid: "alarms-filter-form", turbo_frame: "alarms-table" },
+              class: "alarms-filter-bar mb-lg" do %>
+  <%= hidden_field_tag :sort, applied[:sort] %>
+  <%= hidden_field_tag :dir,  applied[:dir] %>
+  <%= hidden_field_tag :show_cleared, show_cleared_on ? "1" : "0" %>
+
+  <div class="alarms-search-field">
+    <span class="material-symbols-outlined alarms-search-field__icon" aria-hidden="true">search</span>
+    <label class="sr-only" for="alarms-search-input">Search alarms</label>
+    <%= text_field_tag :q, applied[:q],
+                        placeholder: "Search by error code or title…",
+                        autocomplete: "off",
+                        id: "alarms-search-input",
+                        data: { alarms_search_target: "input", action: "input->alarms-search#schedule" },
+                        class: "alarms-search-field__input" %>
+  </div>
+
+  <%# Severity toggles: none checked ⇒ same rows as all three checked (no filter vs IN all); URL differs so “all on” stays visually highlighted. %>
+  <fieldset class="alarms-filter-group alarms-severity-segment" aria-label="Severity">
+    <% %w[critical warning cleared].each do |sev| %>
+      <% checked = selected_severities.include?(sev) %>
+      <label class="alarm-chip alarm-chip--segment alarm-chip--segment-<%= sev %>">
+        <%= check_box_tag "severity[]", sev, checked, class: "sr-only", data: { action: "change->alarms-search#submit" } %>
+        <%= sev.titleize %>
+      </label>
+    <% end %>
+  </fieldset>
+
+  <div class="alarms-filter-selects">
+    <%= select_tag :site_id,
+                   options_from_collection_for_select(sites, :id, :name, applied[:site_id]),
+                   include_blank: "All sites",
+                   class:           "alarms-select-plain",
+                   aria:            { label: "Site" },
+                   data:            { action: "change->alarms-search#submit" } %>
+
+    <%= select_tag :code_id,
+                   options_from_collection_for_select(alarm_codes, :id, ->(c) { "E-#{c.code} · #{c.label}" }, applied[:code_id]),
+                   include_blank: "All codes",
+                   class:           "alarms-select-plain",
+                   aria:            { label: "Alarm code" },
+                   data:            { action: "change->alarms-search#submit" } %>
+
+    <% if show_customer_picker %>
+      <%= select_tag :customer_id,
+                     options_from_collection_for_select(Organization.where(org_type: "customer").order(:name), :id, :name, applied[:customer_id]),
+                     include_blank: "All customers",
+                     class:           "alarms-select-plain",
+                     aria:            { label: "Customer" },
+                     data:            { action: "change->alarms-search#submit" } %>
+    <% end %>
+
+    <% if show_partner_picker %>
+      <%= select_tag :partner_id,
+                     options_from_collection_for_select(Organization.where(org_type: "partner").order(:name), :id, :name, applied[:partner_id]),
+                     include_blank: "All partners",
+                     class:           "alarms-select-plain",
+                     aria:            { label: "Partner" },
+                     data:            { action: "change->alarms-search#submit" } %>
+    <% end %>
+  </div>
+<% end %>

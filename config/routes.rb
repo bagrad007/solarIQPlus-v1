@@ -31,6 +31,13 @@ Rails.application.routes.draw do
       end
     end
 
+    resources :alarms, only: [:index] do
+      member do
+        post :acknowledge
+        post :clear
+      end
+    end
+
     get  "customer_manager", to: "customer_manager#index"
     post "customer_manager", to: "customer_manager#create"
 

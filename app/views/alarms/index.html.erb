@@ -1,0 +1,18 @@
+<% provide(:title, "Alarms") %>
+
+<%
+  scope_label = (Current.effective_organization&.name.presence || "your fleet")
+%>
+
+<%= render "shared/page_header",
+           title: "Alarms",
+           actions: nil %>
+
+<%= render "alarms_filter_bar",
+           applied:     @result.applied,
+           alarm_codes: @alarm_codes,
+           sites:       @sites_in_scope %>
+
+<%= render "alarms_table",
+           result:  @result,
+           applied: @result.applied %>

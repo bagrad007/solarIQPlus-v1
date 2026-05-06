@@ -12,3 +12,6 @@ application.register("ai-energy-analyst", AiEnergyAnalystController)
 
 import MobileAccountSheetController from "./mobile_account_sheet_controller"
 application.register("mobile-account-sheet", MobileAccountSheetController)
+
+import AlarmsSearchController from "./alarms_search_controller"
+application.register("alarms-search", AlarmsSearchController)

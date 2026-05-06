@@ -17,7 +17,7 @@ class DiagnosticsController < ApplicationController
     weather = fetch_weather
     @forecast    = SiteForecast.new(@site, weather: weather).to_h
     @open_cases  = Case.where(site_id: @site.id).where.not(status: "closed").order(created_at: :desc).limit(5)
-    @diagnostics_payload = SiteDiagnostics.new(@site).to_h
+    @diagnostics_payload = SiteDiagnostics.new(@site).to_h.merge(forecast: @forecast)
   end
 
   private

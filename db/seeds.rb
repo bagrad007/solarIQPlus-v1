@@ -251,6 +251,124 @@ ActiveRecord::Base.transaction do
     c.escalated_to_maverick = true
     c.escalated_at         = 2.hours.ago
   end
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Alarm catalog (placeholder codes — replace these with the real catalog
+  # once it's defined). Idempotent on the integer `code` (UNIQUE).
+  # ──────────────────────────────────────────────────────────────────────
+  alarm_code_specs = [
+    { code: 100, label: "Inverter Offline",     default_severity: "critical", description: "Inverter has stopped responding to polling." },
+    { code: 200, label: "Low String Voltage",   default_severity: "warning",  description: "DC string voltage outside the expected band." },
+    { code: 301, label: "Inverter Overheat",    default_severity: "warning",  description: "Inverter heatsink temperature trending above safe range." },
+    { code: 404, label: "Gateway No Response",  default_severity: "critical", description: "Site gateway unreachable; telemetry pipeline stalled." },
+    { code: 500, label: "Telemetry Stale",      default_severity: "warning",  description: "No new telemetry rows in the last polling window." },
+    { code: 900, label: "Inverter Recovered",   default_severity: "cleared",  description: "Inverter reported online after a prior fault." }
+  ]
+
+  alarm_codes = {}
+  alarm_code_specs.each do |spec|
+    code_row = AlarmCode.find_or_create_by!(code: spec[:code]) do |c|
+      c.label            = spec[:label]
+      c.default_severity = spec[:default_severity]
+      c.description      = spec[:description]
+    end
+    code_row.update!(label: spec[:label], default_severity: spec[:default_severity], description: spec[:description])
+    alarm_codes[spec[:code]] = code_row
+  end
+
+  # Distribution (≈30 rows): 8 firing/critical, 8 firing/warning,
+  # 6 acknowledged/critical, 8 cleared mixed. Spread opened_at across the
+  # last 14 days so sort/filter exercises the full surface. Idempotent
+  # via deterministic alarm ids.
+  alarm_specs = []
+  firing_critical_codes  = [100, 404]
+  firing_warning_codes   = [200, 301, 500]
+  acknowledged_codes     = [100, 404]
+  cleared_codes          = [900, 200, 100]
+
+  site_keys = sites.keys
+  rng = Random.new(42)
+
+  8.times do |i|
+    alarm_specs << {
+      key: "firing-critical-#{i}", site: sites[site_keys[i % site_keys.size]],
+      code: alarm_codes[firing_critical_codes[i % 2]],
+      status: "firing",
+      opened_at: rng.rand(0..6).hours.ago + rng.rand(0..59).minutes
+    }
+  end
+
+  8.times do |i|
+    alarm_specs << {
+      key: "firing-warning-#{i}", site: sites[site_keys[(i + 1) % site_keys.size]],
+      code: alarm_codes[firing_warning_codes[i % firing_warning_codes.size]],
+      status: "firing",
+      opened_at: rng.rand(2..36).hours.ago
+    }
+  end
+
+  6.times do |i|
+    site = sites[site_keys[(i + 2) % site_keys.size]]
+    customer_user_key = case site.organization_id
+                       when customers["goose"].id  then "goose-user"
+                       when customers["kiwi"].id   then "kiwi-user"
+                       when customers["murtle"].id then "murtle-user"
+                       when customers["crow"].id   then "crow-user"
+                       end
+    alarm_specs << {
+      key: "ack-critical-#{i}", site: site,
+      code: alarm_codes[acknowledged_codes[i % acknowledged_codes.size]],
+      status: "acknowledged",
+      opened_at:        rng.rand(12..72).hours.ago,
+      acknowledged_by:  users[customer_user_key],
+      acknowledged_at:  rng.rand(1..6).hours.ago
+    }
+  end
+
+  8.times do |i|
+    site = sites[site_keys[(i + 3) % site_keys.size]]
+    cleared_open  = rng.rand(48..14 * 24).hours.ago
+    cleared_done  = cleared_open + rng.rand(1..24).hours
+    customer_user_key = case site.organization_id
+                       when customers["goose"].id  then "goose-user"
+                       when customers["kiwi"].id   then "kiwi-user"
+                       when customers["murtle"].id then "murtle-user"
+                       when customers["crow"].id   then "crow-user"
+                       end
+    alarm_specs << {
+      key: "cleared-#{i}", site: site,
+      code: alarm_codes[cleared_codes[i % cleared_codes.size]],
+      status: "cleared",
+      opened_at: cleared_open,
+      cleared_by:  users[customer_user_key],
+      cleared_at:  cleared_done
+    }
+  end
+
+  alarm_specs.each do |spec|
+    next if Alarm.exists?(id: make_id("alarm-#{spec[:key]}"))
+    alarm = Alarm.create!(
+      id:           make_id("alarm-#{spec[:key]}"),
+      site:         spec[:site],
+      organization_id: spec[:site].organization_id,
+      code:         spec[:code],
+      opened_at:    spec[:opened_at]
+    )
+    case spec[:status]
+    when "acknowledged"
+      alarm.update!(
+        status: "acknowledged",
+        acknowledged_at:        spec[:acknowledged_at],
+        acknowledged_by_user_id: spec[:acknowledged_by].id
+      )
+    when "cleared"
+      alarm.update!(
+        status: "cleared",
+        cleared_at:        spec[:cleared_at],
+        cleared_by_user_id: spec[:cleared_by].id
+      )
+    end
+  end
 end
 
 puts "Seeded:"
@@ -259,5 +377,7 @@ puts "  Users:         #{User.count}"
 puts "  Sites:         #{Site.count}"
 puts "  Telemetry:     #{Telemetry.count}"
 puts "  Cases:         #{Case.count}"
+puts "  Alarm Codes:   #{AlarmCode.count}"
+puts "  Alarms:        #{Alarm.count}"
 puts ""
 puts "All users use password: #{PASSWORD}"

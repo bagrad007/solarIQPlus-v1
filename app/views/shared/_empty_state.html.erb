@@ -1,0 +1,18 @@
+<%#
+  Reusable empty-state panel.
+  Locals:
+    icon  (String) — Material Symbols name
+    title (String) — headline ("No X yet")
+    body  (String) — supporting copy
+    cta   (Hash, optional) — { label:, href: } for a primary CTA link
+%>
+<div class="flex flex-col items-center justify-center text-center rounded-xl border border-outline-variant bg-surface-container-low px-margin py-xl gap-sm"
+     data-testid="empty-state">
+  <span class="material-symbols-outlined text-on-surface-variant" style="font-size: 40px"><%= icon %></span>
+  <h2 class="text-headline-md text-on-surface"><%= title %></h2>
+  <p class="text-body-md text-on-surface-variant max-w-prose"><%= body %></p>
+  <% if local_assigns[:cta].present? %>
+    <%= link_to cta[:label], cta[:href],
+                class: "mt-sm inline-flex items-center gap-xs px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-95" %>
+  <% end %>
+</div>

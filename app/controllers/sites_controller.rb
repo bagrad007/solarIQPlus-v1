@@ -18,6 +18,7 @@ class SitesController < ApplicationController
     @summary    = SiteOperationalSummary.new(@site).to_h(weather: weather)
     @forecast    = SiteForecast.new(@site, weather: weather).to_h
     @open_cases  = Case.where(site_id: @site.id).where.not(status: "closed").order(created_at: :desc).limit(5)
+    @firing_alarms_count = Alarm.where(site_id: @site.id, status: "firing").count
   end
 
   def new

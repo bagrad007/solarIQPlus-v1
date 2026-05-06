@@ -60,6 +60,17 @@ COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
 --
+-- Name: alarm_severity; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.alarm_severity AS ENUM (
+    'critical',
+    'warning',
+    'cleared'
+);
+
+
+--
 -- Name: alarm_state; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -67,6 +78,17 @@ CREATE TYPE public.alarm_state AS ENUM (
     'normal',
     'warn',
     'critical'
+);
+
+
+--
+-- Name: alarm_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.alarm_status AS ENUM (
+    'firing',
+    'acknowledged',
+    'cleared'
 );
 
 
@@ -196,6 +218,51 @@ DECLARE
 BEGIN
   SELECT path INTO result FROM organizations WHERE id = app.effective_org_id();
   RETURN result;
+END
+$$;
+
+
+--
+-- Name: enforce_alarm_state_machine(); Type: FUNCTION; Schema: app; Owner: -
+--
+
+CREATE FUNCTION app.enforce_alarm_state_machine() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.status = OLD.status THEN
+    RETURN NEW;
+  END IF;
+
+  IF OLD.status = 'cleared' THEN
+    RAISE EXCEPTION 'alarms.status is final once cleared';
+  END IF;
+
+  IF OLD.status = 'acknowledged' AND NEW.status = 'firing' THEN
+    RAISE EXCEPTION 'alarms.status cannot move from acknowledged back to firing';
+  END IF;
+
+  -- firing → acknowledged: stamp ack metadata if the caller didn't.
+  IF NEW.status = 'acknowledged' THEN
+    IF NEW.acknowledged_at IS NULL THEN
+      NEW.acknowledged_at := now();
+    END IF;
+    IF NEW.acknowledged_by_user_id IS NULL THEN
+      NEW.acknowledged_by_user_id := app.current_user_id();
+    END IF;
+  END IF;
+
+  -- → cleared: stamp clear metadata if the caller didn't.
+  IF NEW.status = 'cleared' THEN
+    IF NEW.cleared_at IS NULL THEN
+      NEW.cleared_at := now();
+    END IF;
+    IF NEW.cleared_by_user_id IS NULL THEN
+      NEW.cleared_by_user_id := app.current_user_id();
+    END IF;
+  END IF;
+
+  RETURN NEW;
 END
 $$;
 
@@ -341,6 +408,31 @@ $$;
 
 
 --
+-- Name: populate_alarm_defaults_from_code(); Type: FUNCTION; Schema: app; Owner: -
+--
+
+CREATE FUNCTION app.populate_alarm_defaults_from_code() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  code_row alarm_codes%ROWTYPE;
+BEGIN
+  SELECT * INTO code_row FROM alarm_codes WHERE id = NEW.code_id;
+  IF code_row.id IS NULL THEN
+    RAISE EXCEPTION 'alarms.code_id % not found in alarm_codes', NEW.code_id;
+  END IF;
+  IF NEW.severity IS NULL THEN
+    NEW.severity := code_row.default_severity;
+  END IF;
+  IF NEW.title IS NULL OR length(btrim(NEW.title)) = 0 THEN
+    NEW.title := code_row.label;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
 -- Name: populate_organization_path(); Type: FUNCTION; Schema: app; Owner: -
 --
 
@@ -415,6 +507,28 @@ $$;
 
 
 --
+-- Name: validate_alarm_site_ownership(); Type: FUNCTION; Schema: app; Owner: -
+--
+
+CREATE FUNCTION app.validate_alarm_site_ownership() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  site_org uuid;
+BEGIN
+  SELECT organization_id INTO site_org FROM sites WHERE id = NEW.site_id;
+  IF site_org IS NULL THEN
+    RAISE EXCEPTION 'alarms.site_id % not found', NEW.site_id;
+  END IF;
+  IF site_org <> NEW.organization_id THEN
+    RAISE EXCEPTION 'alarms.organization_id % does not own site %', NEW.organization_id, NEW.site_id;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+--
 -- Name: validate_site_parent_is_customer(); Type: FUNCTION; Schema: app; Owner: -
 --
 
@@ -457,6 +571,54 @@ $$;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: alarm_codes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.alarm_codes (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    code integer NOT NULL,
+    label text NOT NULL,
+    default_severity public.alarm_severity NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT alarm_codes_code_positive CHECK ((code > 0)),
+    CONSTRAINT alarm_codes_label_not_blank CHECK ((length(btrim(label)) > 0))
+);
+
+
+--
+-- Name: alarms; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.alarms (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    org_path public.ltree NOT NULL,
+    site_id uuid NOT NULL,
+    code_id uuid NOT NULL,
+    severity public.alarm_severity NOT NULL,
+    status public.alarm_status DEFAULT 'firing'::public.alarm_status NOT NULL,
+    title text NOT NULL,
+    opened_at timestamp with time zone DEFAULT now() NOT NULL,
+    acknowledged_by_user_id uuid,
+    acknowledged_at timestamp with time zone,
+    cleared_by_user_id uuid,
+    cleared_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT alarms_acknowledged_pair CHECK ((((acknowledged_at IS NULL) AND (acknowledged_by_user_id IS NULL)) OR ((acknowledged_at IS NOT NULL) AND (acknowledged_by_user_id IS NOT NULL)))),
+    CONSTRAINT alarms_acknowledged_set_when_acknowledged CHECK (((status <> 'acknowledged'::public.alarm_status) OR (acknowledged_at IS NOT NULL))),
+    CONSTRAINT alarms_cleared_pair CHECK ((((cleared_at IS NULL) AND (cleared_by_user_id IS NULL)) OR ((cleared_at IS NOT NULL) AND (cleared_by_user_id IS NOT NULL)))),
+    CONSTRAINT alarms_cleared_set_when_cleared CHECK (((status <> 'cleared'::public.alarm_status) OR (cleared_at IS NOT NULL))),
+    CONSTRAINT alarms_firing_has_no_terminal_metadata CHECK (((status <> 'firing'::public.alarm_status) OR ((acknowledged_at IS NULL) AND (cleared_at IS NULL)))),
+    CONSTRAINT alarms_title_not_blank CHECK ((length(btrim(title)) > 0))
+);
+
+ALTER TABLE ONLY public.alarms FORCE ROW LEVEL SECURITY;
+
 
 --
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
@@ -763,6 +925,30 @@ ALTER TABLE ONLY public.telemetry ATTACH PARTITION public.telemetry_y2026m08 FOR
 
 
 --
+-- Name: alarm_codes alarm_codes_code_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarm_codes
+    ADD CONSTRAINT alarm_codes_code_unique UNIQUE (code);
+
+
+--
+-- Name: alarm_codes alarm_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarm_codes
+    ADD CONSTRAINT alarm_codes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: alarms alarms_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -888,6 +1074,41 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_reset_password_token_unique UNIQUE (reset_password_token);
+
+
+--
+-- Name: index_alarms_on_code_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_alarms_on_code_id ON public.alarms USING btree (code_id);
+
+
+--
+-- Name: index_alarms_on_firing; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_alarms_on_firing ON public.alarms USING btree (organization_id, opened_at DESC) WHERE (status = 'firing'::public.alarm_status);
+
+
+--
+-- Name: index_alarms_on_org_path; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_alarms_on_org_path ON public.alarms USING gist (org_path);
+
+
+--
+-- Name: index_alarms_on_org_status_opened_at_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_alarms_on_org_status_opened_at_desc ON public.alarms USING btree (organization_id, status, opened_at DESC);
+
+
+--
+-- Name: index_alarms_on_site_opened_at_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_alarms_on_site_opened_at_desc ON public.alarms USING btree (site_id, opened_at DESC);
 
 
 --
@@ -1423,6 +1644,48 @@ ALTER INDEX public.index_telemetry_on_site_id_and_recorded_at ATTACH PARTITION p
 
 
 --
+-- Name: alarm_codes trg_alarm_codes_touch_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_alarm_codes_touch_updated_at BEFORE UPDATE ON public.alarm_codes FOR EACH ROW EXECUTE FUNCTION app.touch_updated_at();
+
+
+--
+-- Name: alarms trg_alarms_populate_defaults_from_code; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_alarms_populate_defaults_from_code BEFORE INSERT ON public.alarms FOR EACH ROW EXECUTE FUNCTION app.populate_alarm_defaults_from_code();
+
+
+--
+-- Name: alarms trg_alarms_populate_org_path; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_alarms_populate_org_path BEFORE INSERT OR UPDATE OF organization_id ON public.alarms FOR EACH ROW EXECUTE FUNCTION app.populate_tenant_org_path();
+
+
+--
+-- Name: alarms trg_alarms_state_machine; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_alarms_state_machine BEFORE UPDATE OF status ON public.alarms FOR EACH ROW EXECUTE FUNCTION app.enforce_alarm_state_machine();
+
+
+--
+-- Name: alarms trg_alarms_touch_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_alarms_touch_updated_at BEFORE UPDATE ON public.alarms FOR EACH ROW EXECUTE FUNCTION app.touch_updated_at();
+
+
+--
+-- Name: alarms trg_alarms_validate_site_ownership; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_alarms_validate_site_ownership BEFORE INSERT OR UPDATE OF site_id, organization_id ON public.alarms FOR EACH ROW EXECUTE FUNCTION app.validate_alarm_site_ownership();
+
+
+--
 -- Name: audit_logs trg_audit_logs_no_delete; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1549,6 +1812,46 @@ CREATE TRIGGER trg_users_validate_role_matches_org_type BEFORE INSERT OR UPDATE 
 
 
 --
+-- Name: alarms alarms_acknowledged_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_acknowledged_by_user_id_fkey FOREIGN KEY (acknowledged_by_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: alarms alarms_cleared_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_cleared_by_user_id_fkey FOREIGN KEY (cleared_by_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: alarms alarms_code_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_code_id_fkey FOREIGN KEY (code_id) REFERENCES public.alarm_codes(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: alarms alarms_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: alarms alarms_site_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alarms
+    ADD CONSTRAINT alarms_site_id_fkey FOREIGN KEY (site_id) REFERENCES public.sites(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: audit_logs audit_logs_actor_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1629,6 +1932,12 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: alarms; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.alarms ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: audit_logs; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1693,6 +2002,13 @@ ALTER TABLE public.telemetry_y2026m07 ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.telemetry_y2026m08 ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: alarms tenant_visibility; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_visibility ON public.alarms TO app_user USING (app.can_see(org_path)) WITH CHECK (app.can_see(org_path));
+
 
 --
 -- Name: audit_logs tenant_visibility; Type: POLICY; Schema: public; Owner: -
@@ -1791,6 +2107,8 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260506190100'),
+('20260506190000'),
 ('20260506143000'),
 ('20260505181440'),
 ('20260505124000'),

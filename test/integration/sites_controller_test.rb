@@ -106,6 +106,41 @@ class SitesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "show no longer renders the per-site Edit Site / New Case CTAs in the page header" do
+    sign_in_as(@northwind_user)
+
+    get site_path(@site_a)
+
+    assert_response :success
+    # The "Edit Site" action moves to a per-card affordance on the listing
+    # pages, and the per-site "New Case" CTA is dropped as redundant — global
+    # case creation lives on the cases index / partner dashboards instead.
+    assert_select "header a[href=?]", edit_site_path(@site_a),     count: 0
+    assert_select "header a[href=?]", new_site_case_path(@site_a), count: 0
+  end
+
+  test "index renders an Edit Site link inside each site card" do
+    sign_in_as(@northwind_user)
+
+    get sites_path
+
+    assert_response :success
+    assert_select "a[href=?]", edit_site_path(@site_a), text: /Edit Site/i, count: 1
+  end
+
+  test "index hides the Edit Site card link while in view-as inspect mode" do
+    # Maverick admin in view-as inspecting a Partner: write-CTAs across the app
+    # are hidden (the assertion canonicalized in view_as_affordance_test). This
+    # test extends that contract to the new per-card Edit Site affordance.
+    sign_in_as(@maverick_admin)
+    post admin_view_as_path, params: { org_id: @acme.id }
+
+    get sites_path
+
+    assert_response :success
+    assert_select "a[href$='/edit']", count: 0
+  end
+
   private
 
   def sign_in_as(user)

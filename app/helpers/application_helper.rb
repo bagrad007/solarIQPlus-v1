@@ -7,6 +7,7 @@ module ApplicationHelper
       [
         { label: "Dashboard",   path: dashboard_path,   icon: "dashboard" },
         { label: "Diagnostics", path: diagnostics_path, icon: "monitoring" },
+        { label: "Alarms",      path: alarms_path,      icon: "notifications_active" },
         { label: "Cases",       path: cases_path,       icon: "support_agent" },
         { label: "Audit Logs",  path: audit_logs_path,  icon: "fact_check" }
       ]
@@ -15,12 +16,14 @@ module ApplicationHelper
         { label: "Dashboard",        path: dashboard_path,         icon: "dashboard" },
         { label: "Diagnostics",      path: diagnostics_path,       icon: "monitoring" },
         { label: "Customer Manager", path: customer_manager_path,  icon: "groups" },
+        { label: "Alarms",           path: alarms_path,            icon: "notifications_active" },
         { label: "Cases",            path: cases_path,             icon: "support_agent" }
       ]
     when "customer"
       [
         { label: "Dashboard",   path: dashboard_path,   icon: "dashboard" },
         { label: "Diagnostics", path: diagnostics_path, icon: "monitoring" },
+        { label: "Alarms",      path: alarms_path,      icon: "notifications_active" },
         { label: "Cases",       path: cases_path,       icon: "support_agent" }
       ]
     else

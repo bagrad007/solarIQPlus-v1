@@ -4,21 +4,25 @@
   <%= javascript_include_tag "dashboard", "data-turbo-track": "reload", type: "module", defer: true %>
 <% end %>
 
+<%# Per-site write CTAs (Edit Site, New Case) used to sit in this header.
+    Edit Site moved to a corner link on each Site card on the listing pages
+    so the action lives next to the asset; per-site New Case is dropped as
+    redundant — global case creation is reachable from the Cases index and
+    Partner dashboards. %>
 <%
-  actions = capture do
-    unless Current.in_view_as?
-      concat(link_to "New Case", new_site_case_path(@site),
-             class: "px-md py-sm rounded-md bg-primary text-on-primary text-label-md hover:opacity-90 inline-flex items-center gap-xs me-sm")
-      concat(link_to "Edit Site", edit_site_path(@site),
-             class: "px-md py-sm rounded-md border border-outline text-on-surface text-label-md hover:bg-surface-container")
-    end
-  end
+  firing_count = @firing_alarms_count.to_i
+  badge_variant = firing_count.zero? ? "quiet" : "active"
 %>
 
 <%= render "shared/page_header",
            title: @site.name,
            subtitle: "Operational dashboard",
-           actions: actions %>
+           actions: link_to(alarms_path(site_id: @site.id, status: ["firing"]),
+                            class: "alarm-badge alarm-badge--#{badge_variant}",
+                            data: { testid: "site-firing-alarms-badge" }) {
+             tag.span("notifications_active", class: "material-symbols-outlined", "aria-hidden": true) +
+             tag.span(pluralize(firing_count, "firing alarm"))
+           } %>
 
 <% dashboard_payload = @summary.merge(forecast: @forecast) %>
 

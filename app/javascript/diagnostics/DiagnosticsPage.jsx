@@ -1,24 +1,24 @@
-// Diagnostics console — reference layout: a left "System Status / Asset
-// Summary" rail (col-span-3 on lg) sits beside the primary diagnostics column
-// (col-span-9). The primary column hosts a hero import/export chart with an
-// inline grid summary, a dense 4-tile telemetry strip, then an 8/4 lower row
-// (7-day solar bars + AC voltage spark / inverter snapshot). Below the bento
-// the page keeps the existing two-up (today pie + live topology) and a today
-// metric strip. All values come from `SiteDiagnostics`; nothing is invented.
-
-import StatTile from "./StatTile.jsx";
+// Diagnostics console — full-width status + asset summary row on top, then the
+// hero import/export chart and dense telemetry (tiles + full-width 7-day solar),
+// then full-width topology, then today's energy mix beside stacked forecast
+// tiles. The topology diagram uses the full content width so the diagram +
+// metrics column are not cramped.
+//
+// All values come from `SiteDiagnostics`. We never invent data:
+//   * "No active alarms" copy renders only when the latest reading is `normal`;
+//     "Awaiting telemetry" renders when the site has produced no rows yet.
 import ImportExportChart from "./ImportExportChart.jsx";
-import ImportExportPie from "./ImportExportPie.jsx";
+import TodayEnergyMix from "./TodayEnergyMix.jsx";
+import ForecastTile from "./ForecastTile.jsx";
 import EnergyFlowPanel from "./EnergyFlowPanel.jsx";
 import Solar7DayChart from "./Solar7DayChart.jsx";
-import AcVoltageSpark from "../dashboard/AcVoltageSpark.jsx";
 import { fahrenheitFromCelsius } from "../lib/temperature.js";
 
 const STATUS_TONE = {
-  normal:   { ring: "ring-green-500/30", chip: "bg-green-50 text-green-700",   dot: "bg-green-500",   label: "Normal" },
-  warn:     { ring: "ring-amber-500/30", chip: "bg-amber-50 text-amber-700",   dot: "bg-amber-500",   label: "Warning" },
-  critical: { ring: "ring-red-500/30",   chip: "bg-red-50 text-red-700",       dot: "bg-red-500",     label: "Critical" },
-  unknown:  { ring: "ring-outline-variant", chip: "bg-surface-container-high text-on-surface-variant", dot: "bg-on-surface-variant", label: "No telemetry" }
+  normal:   { surface: "bg-green-50  border-green-500/30  text-green-700",  caption: "text-green-700",  dot: "bg-green-500",         label: "Normal",       sub: "No active alarms" },
+  warn:     { surface: "bg-amber-50  border-amber-500/40  text-amber-700",  caption: "text-amber-700",  dot: "bg-amber-500",         label: "Warning",      sub: "Investigate this site" },
+  critical: { surface: "bg-red-50    border-red-500/40    text-red-700",    caption: "text-red-700",    dot: "bg-red-500",           label: "Critical",     sub: "Action required" },
+  unknown:  { surface: "bg-surface-container-high border-outline-variant text-on-surface-variant", caption: "text-on-surface-variant", dot: "bg-on-surface-variant", label: "No telemetry", sub: "Awaiting first reading" }
 };
 
 export default function DiagnosticsPage({ payload }) {
@@ -29,140 +29,141 @@ export default function DiagnosticsPage({ payload }) {
   const week = payload.last_7_days || {};
   const ieSeries = payload.import_export_series || [];
   const solarSeries = payload.solar_7d_series || [];
+  const forecast = payload.forecast || {};
 
   const todaySolarKwh = round1((todayPie.exported_kwh || 0) + (todayPie.self_consumption_kwh || 0));
   const peakKw = peakAbsKw(ieSeries);
+  const inverterTempF = today.inverter_temp_f ?? fahrenheitFromCelsius(today.inverter_temp_c);
 
   return (
-    <div className="dashboard-reveal flex w-full min-w-0 max-w-full flex-col gap-lg">
-      {/* Reference structure: 3/9 rail + main on lg, single-column on mobile. */}
-      <div className="grid w-full min-w-0 grid-cols-1 items-start gap-md lg:grid-cols-12">
-        <aside className="flex w-full min-w-0 flex-col gap-md lg:col-span-3" aria-label="Diagnostics status rail">
-          <SystemStatusCard latest={latest} flow={energyFlow} />
-          <AssetSummaryCard week={week} todaySolarKwh={todaySolarKwh} latest={latest} />
-        </aside>
+    <div className="dashboard-reveal flex w-full min-w-0 max-w-full flex-col gap-md">
+      {/* Status + assets span the content width above the hero chart (stacked on small screens). */}
+      <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-md lg:grid-cols-2">
+        <SystemStatusCard latest={latest} flow={energyFlow} inverterTempF={inverterTempF} />
+        <AssetSummaryCard
+          week={week}
+          todaySolarKwh={todaySolarKwh}
+          today={today}
+        />
+      </div>
 
-        <div className="flex w-full min-w-0 flex-col gap-md lg:col-span-9">
-          <HeroChart
-            ieSeries={ieSeries}
-            flow={energyFlow}
-            peakKw={peakKw}
+      <div className="flex w-full min-w-0 flex-col gap-md">
+        <HeroChart ieSeries={ieSeries} flow={energyFlow} peakKw={peakKw} />
+        <ModularTileStrip latest={latest} todaySolarKwh={todaySolarKwh} />
+        <LowerRow solarSeries={solarSeries} />
+      </div>
+
+      {/* Topology gets the full content width so the 480 px diagram + metrics
+          column can breathe instead of fighting a 4-col card. */}
+      <Card
+        title="Live energy topology"
+        subtitle="Directed flows from the latest telemetry snapshot"
+      >
+        <EnergyFlowPanel flow={energyFlow} />
+      </Card>
+
+      {/* Today's mix (wide) + stacked forecast tiles — matches operational forecast data. */}
+      <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-md lg:grid-cols-3">
+        <Card
+          title="Today's energy mix"
+          subtitle="Self-use vs grid export (integrated kWh)"
+          className="min-w-0 lg:col-span-2"
+        >
+          <TodayEnergyMix pie={todayPie} />
+        </Card>
+        <div className="flex min-w-0 flex-col gap-md lg:col-span-1" aria-label="Forecast solar production">
+          <ForecastTile
+            label="Forecast Solar Production Today"
+            projectedKwh={forecast.today_kwh}
+            condition={forecast.today_condition}
+            highF={forecast.today_temp_high_f}
           />
-          <ModularTileStrip latest={latest} todaySolarKwh={todaySolarKwh} />
-          <LowerRow solarSeries={solarSeries} ieSeries={ieSeries} latest={latest} />
+          <ForecastTile
+            label="Forecast Solar Production Tomorrow"
+            projectedKwh={forecast.tomorrow_kwh}
+            condition={forecast.tomorrow_condition}
+            highF={forecast.tomorrow_temp_high_f}
+          />
         </div>
-      </div>
-
-      {/* Existing real-data panels — kept as supporting content below the bento. */}
-      <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-lg lg:grid-cols-2">
-        <Card title="Import / export today" subtitle="Self-use vs grid (integrated kWh)" className="min-w-0">
-          <ImportExportPie pie={todayPie} />
-        </Card>
-        <Card title="Live energy topology" subtitle="Directed flows from the latest snapshot" className="min-w-0">
-          <EnergyFlowPanel flow={energyFlow} />
-        </Card>
-      </div>
-
-      <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-md sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Self consumption today"
-          value={today.self_consumption_kwh}
-          unit="kWh"
-          tone="primary"
-        />
-        <StatTile
-          label="Grid consumption today"
-          value={today.grid_consumption_kwh}
-          unit="kWh"
-          tone="error"
-        />
-        <StatTile label="Consumed today" value={today.consumed_kwh} unit="kWh" tone="error" />
-        <StatTile
-          label="Inverter temperature"
-          value={today.inverter_temp_f ?? fahrenheitFromCelsius(today.inverter_temp_c)}
-          unit="°F"
-          tone={inverterTempTone(today.inverter_temp_c)}
-        />
       </div>
     </div>
   );
 }
 
-// ── Left rail ─────────────────────────────────────────────────────────────
+// ── Top row: status + asset summary ───────────────────────────────────────
 
-function SystemStatusCard({ latest, flow }) {
+function SystemStatusCard({ latest, flow, inverterTempF }) {
   const state = latest?.alarm_state ?? (latest?.recorded_at ? "normal" : "unknown");
   const tone = STATUS_TONE[state] || STATUS_TONE.unknown;
-  const stateLabel = tone.label;
 
   return (
     <section
       className="w-full min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm"
       aria-label="System status"
     >
-      <div className="flex items-center justify-between mb-sm">
-        <span className="text-label-sm font-semibold uppercase tracking-wide text-on-surface-variant">
+      <div className="flex items-center justify-between mb-md">
+        <span className="text-label-sm font-bold uppercase tracking-wide text-on-surface-variant">
           System status
         </span>
-        <span className={`inline-flex h-2 w-2 rounded-full ${tone.dot}`} aria-hidden />
+        <span className={`inline-flex h-2.5 w-2.5 rounded-full ${tone.dot}`} aria-hidden />
       </div>
 
-      <div className={`rounded-xl border border-outline-variant/60 ${tone.chip} px-md py-md text-center ring-1 ${tone.ring}`}>
-        <span className="font-[family-name:var(--font-display-serif)] text-display-md tracking-tight">
-          {stateLabel}
+      <div className={`text-center rounded-xl border-2 px-md py-lg ${tone.surface}`}>
+        <span className="block font-[family-name:var(--font-display-serif)] text-display-md tracking-tight">
+          {tone.label}
         </span>
-        <p className="text-label-sm uppercase tracking-widest mt-xs">
-          {state === "unknown" ? "Awaiting telemetry" : "Latest reported state"}
-        </p>
+        <span className={`block text-label-sm uppercase tracking-widest mt-xs ${tone.caption}`}>
+          {tone.sub}
+        </span>
       </div>
 
-      <dl className="mt-md flex flex-col gap-xs text-label-sm">
-        <Row label="Grid direction" value={gridDirectionLabel(flow)} />
-        <Row label="Inverter status" value={titleize(latest?.inverter_status)} />
-        <Row label="Latest sample" value={formatRelative(latest?.recorded_at)} />
+      <dl className="mt-md flex flex-col text-label-sm">
+        <Row label="Grid direction"   value={gridDirectionLabel(flow)} />
+        <Row label="Inverter status"  value={titleize(latest?.inverter_status)} />
+        <Row label="Inverter temp"    value={inverterTempF != null ? `${Number(inverterTempF).toFixed(1)} °F` : null} />
+        <Row label="Latest sample"    value={formatRelative(latest?.recorded_at)} />
       </dl>
     </section>
   );
 }
 
-function AssetSummaryCard({ week, todaySolarKwh, latest }) {
+function AssetSummaryCard({ week, todaySolarKwh, today }) {
   return (
     <section
       className="w-full min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm"
       aria-label="Asset summary"
     >
-      <span className="text-label-sm font-semibold uppercase tracking-wide text-on-surface-variant block mb-sm">
+      <span className="text-label-sm font-bold uppercase tracking-wide text-on-surface-variant block mb-md">
         Asset summary
       </span>
 
-      <div className="flex flex-col gap-md">
+      <div className="flex flex-col gap-lg">
         <Stat
-          label="Solar today"
-          value={todaySolarKwh != null ? todaySolarKwh.toFixed(1) : "—"}
+          label="Solar generated today"
+          value={compactNumber(todaySolarKwh)}
           unit="kWh"
+          accent="solar"
         />
         <Stat
-          label="Last 7 days export"
-          value={week?.export_kwh != null ? Number(week.export_kwh).toFixed(1) : "—"}
+          label="Self-consumption today"
+          value={compactNumber(today?.self_consumption_kwh)}
           unit="kWh"
           accent="primary"
           divider
         />
         <Stat
+          label="Last 7 days export"
+          value={compactNumber(week?.export_kwh)}
+          unit="kWh"
+          divider
+        />
+        <Stat
           label="Last 7 days import"
-          value={week?.import_kwh != null ? Number(week.import_kwh).toFixed(1) : "—"}
+          value={compactNumber(week?.import_kwh)}
           unit="kWh"
           accent="error"
           divider
         />
-        {latest?.ac_power_kw != null ? (
-          <Stat
-            label="Latest AC power"
-            value={Number(latest.ac_power_kw).toFixed(2)}
-            unit="kW"
-            divider
-          />
-        ) : null}
       </div>
     </section>
   );
@@ -241,25 +242,25 @@ function ModularTileStrip({ latest, todaySolarKwh }) {
     <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-md sm:grid-cols-2 lg:grid-cols-4">
       <ModularTile
         label="Current solar AC"
-        value={latest?.ac_power_kw != null ? Number(latest.ac_power_kw).toFixed(2) : "—"}
+        value={compactNumber(latest?.ac_power_kw)}
         unit="kW"
         icon="electrical_services"
       />
       <ModularTile
         label="Current solar DC"
-        value={latest?.dc_power_kw != null ? Number(latest.dc_power_kw).toFixed(2) : "—"}
+        value={compactNumber(latest?.dc_power_kw)}
         unit="kW"
         icon="bolt"
       />
       <ModularTile
         label="Inverter amps"
-        value={latest?.ac_amps != null ? Number(latest.ac_amps).toFixed(1) : "—"}
+        value={compactNumber(latest?.ac_amps, { sub100Precision: 1 })}
         unit="A"
         icon="settings_input_component"
       />
       <ModularTile
         label="Today's solar"
-        value={todaySolarKwh != null ? Number(todaySolarKwh).toFixed(2) : "—"}
+        value={compactNumber(todaySolarKwh)}
         unit="kWh"
         icon="energy_savings_leaf"
       />
@@ -271,19 +272,21 @@ function ModularTile({ label, value, unit, icon }) {
   return (
     <div className="flex h-full min-h-[96px] min-w-0 w-full flex-col justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm transition-colors hover:border-secondary">
       <div className="flex items-start justify-between gap-sm">
-        <span className="text-label-sm font-bold uppercase tracking-wide text-on-surface-variant">
+        <span className="min-w-0 flex-1 text-label-sm font-bold uppercase tracking-wide text-on-surface-variant break-words">
           {label}
         </span>
         <span
-          className="material-symbols-outlined text-secondary opacity-60"
+          className="material-symbols-outlined shrink-0 text-secondary opacity-60"
           style={{ fontSize: 20, fontVariationSettings: "'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24" }}
           aria-hidden
         >
           {icon}
         </span>
       </div>
-      <div className="flex items-baseline gap-xs mt-sm">
-        <span className="font-[family-name:var(--font-display-serif)] text-headline-lg text-on-surface tracking-tight">
+      {/* flex-wrap lets the unit drop to a new line on narrow tiles when the
+          numeric value is wide (e.g. "3,547 kWh" on a ~150 px tile). */}
+      <div className="mt-sm flex flex-wrap items-baseline gap-x-xs gap-y-0">
+        <span className="font-[family-name:var(--font-display-serif)] text-headline-lg text-on-surface tracking-tight tabular-nums">
           {value}
         </span>
         <span className="text-label-md text-on-surface-variant font-semibold">{unit}</span>
@@ -292,64 +295,15 @@ function ModularTile({ label, value, unit, icon }) {
   );
 }
 
-// ── Lower row: 8/4 split ──────────────────────────────────────────────────
+// ── 7-day solar (full width; inverter detail lives in telemetry + topology) ─
 
-function LowerRow({ solarSeries, ieSeries, latest }) {
-  const hasVoltage = (ieSeries || []).some((p) => p?.ac_v != null);
-
+function LowerRow({ solarSeries }) {
   return (
-    <div className="grid w-full min-w-0 grid-cols-1 items-start gap-md lg:grid-cols-12">
-      <Card
-        title="Solar generation"
-        subtitle="Last 7 days · daily energy (kWh)"
-        className="min-h-0 min-w-0 lg:col-span-8"
-      >
-        <div className="h-64 w-full min-h-[200px]">
-          <Solar7DayChart points={solarSeries} />
-        </div>
-      </Card>
-      <div className="w-full min-w-0 lg:col-span-4">
-        {hasVoltage ? (
-          <AcVoltageSpark points={ieSeries} />
-        ) : (
-          <InverterSnapshotCard latest={latest} />
-        )}
+    <Card title="Solar generation" subtitle="Last 7 days · daily energy (kWh)" className="min-h-0 min-w-0">
+      <div className="h-[min(22rem,50vh)] w-full min-h-[240px]">
+        <Solar7DayChart points={solarSeries} />
       </div>
-    </div>
-  );
-}
-
-function InverterSnapshotCard({ latest }) {
-  const rows = [
-    { label: "AC voltage", value: latest?.ac_voltage,  unit: "V" },
-    { label: "DC voltage", value: latest?.dc_voltage,  unit: "V" },
-    { label: "DC amps",    value: latest?.dc_amps,     unit: "A", precision: 1 },
-    { label: "AC amps",    value: latest?.ac_amps,     unit: "A", precision: 1 }
-  ];
-  return (
-    <section className="w-full min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm">
-      <div className="mb-sm flex items-center justify-between">
-        <h3 className="text-label-sm font-semibold uppercase tracking-wide text-on-surface-variant">
-          Inverter snapshot
-        </h3>
-        {latest?.inverter_status ? (
-          <span className="text-label-sm text-primary font-semibold capitalize">
-            {String(latest.inverter_status).replace(/_/g, " ")}
-          </span>
-        ) : null}
-      </div>
-      <ul className="flex flex-col divide-y divide-outline-variant/60">
-        {rows.map((r) => (
-          <li key={r.label} className="flex items-baseline justify-between gap-sm py-xs">
-            <span className="text-label-sm text-on-surface-variant">{r.label}</span>
-            <span className="text-label-md font-semibold text-on-surface tabular-nums">
-              {r.value != null ? Number(r.value).toFixed(r.precision || 0) : "—"}
-              {r.value != null ? <span className="text-label-sm text-on-surface-variant ml-xs">{r.unit}</span> : null}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    </Card>
   );
 }
 
@@ -384,14 +338,15 @@ function Row({ label, value }) {
 
 function Stat({ label, value, unit, accent, divider }) {
   const accentClass =
-    accent === "primary" ? "text-primary" :
-    accent === "error"   ? "text-error"   :
+    accent === "primary" ? "text-primary"      :
+    accent === "error"   ? "text-error"        :
+    accent === "solar"   ? "text-secondary"    :
     "text-on-surface";
   return (
     <div className={divider ? "pt-md border-t border-outline-variant/40" : ""}>
       <span className="block text-label-sm text-on-surface-variant">{label}</span>
-      <div className="flex items-baseline gap-xs">
-        <span className={`font-[family-name:var(--font-display-serif)] text-display-sm tracking-tight ${accentClass}`}>
+      <div className="flex flex-wrap items-baseline gap-x-xs gap-y-0">
+        <span className={`font-[family-name:var(--font-display-serif)] text-display-sm tracking-tight tabular-nums ${accentClass}`}>
           {value}
         </span>
         <span className="text-label-md text-on-surface-variant font-semibold">{unit}</span>
@@ -441,9 +396,17 @@ function round1(n) {
   return Math.round(Number(n) * 10) / 10;
 }
 
-function inverterTempTone(tempC) {
-  if (tempC == null || Number.isNaN(Number(tempC))) return "neutral";
-  if (tempC >= 65) return "error";
-  if (tempC >= 55) return "warn";
-  return "primary";
+// Format a numeric value at a density that fits the diagnostics tiles even
+// at narrower lg widths (~150 px columns). Drops decimal noise as the value
+// grows, then folds 7-digit watt-hour totals into "M" notation so we never
+// print "12,345,678 kWh" inside a 16 px-padded tile.
+function compactNumber(value, { sub100Precision = 2 } = {}) {
+  if (value == null) return "—";
+  const n = Number(value);
+  if (Number.isNaN(n)) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000)  return `${(n / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`;
+  if (abs >= 1000)       return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (abs >= 100)        return n.toFixed(1);
+  return n.toFixed(sub100Precision);
 }

@@ -1,0 +1,10 @@
+<%#
+  Severity dot. Locals:
+    severity (String) — "critical" / "warning" / "cleared"
+    status   (String) — "firing" / "acknowledged" / "cleared" (drives pulse)
+  The pulse only fires for firing + critical (the deliberate high-impact
+  moment). Every other combination is a static colored dot.
+%>
+<span class="alarm-dot alarm-dot--<%= severity %> alarm-dot--<%= status %>"
+      aria-label="<%= severity.to_s.titleize %> severity, <%= status.to_s.titleize %>">
+</span>

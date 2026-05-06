@@ -137,6 +137,17 @@
   --text-data-mono: 14px;
   --text-data-mono--line-height: 20px;
   --text-data-mono--font-weight: 400;
+
+  /*
+    Alarm severity (RGY). Hand-picked to be R/G/Y-distinguishable on the
+    surface-container-lowest table background AND on the navy view-as banner
+    chrome. Distinct from --color-error (which is reserved for hard system
+    errors / form validation) and from --color-secondary (solar-accent
+    orange, reserved for solar-domain highlights — see notes on solar-accent).
+  */
+  --color-alarm-critical: #d11f2f;
+  --color-alarm-warning:  #d18a1f;
+  --color-alarm-cleared:  #0e8a4f;
 }
 
 /* Material Symbols Outlined: keep the variation settings consistent */
@@ -255,3 +266,522 @@
     animation: none;
   }
 }
+
+/* Site dashboard — asset lifetime card: hatched segments (telemetry strip style) */
+.asset-lifetime-seg--lifetime {
+  background-color: var(--color-primary);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-on-primary) 18%, transparent) 0 4px,
+    transparent 4px 9px
+  );
+}
+.asset-lifetime-seg--ytd {
+  background-color: var(--color-solar-accent);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-on-secondary-container) 28%, transparent) 0 4px,
+    transparent 4px 9px
+  );
+}
+.asset-lifetime-seg--mtd {
+  background-color: var(--color-tertiary-container);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--color-on-tertiary-container) 22%, transparent) 0 4px,
+    transparent 4px 9px
+  );
+}
+
+/*
+  Alarms page — severity dot + critical-firing pulse. The pulse is reserved
+  for the highest-impact case (a fault that's still live AND critical); every
+  other severity-status combination is static. This is the deliberate "high
+  impact moment" inside a restrained operator UI.
+*/
+.alarm-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 18%, transparent);
+}
+.alarm-dot--critical { background-color: var(--color-alarm-critical); color: var(--color-alarm-critical); }
+.alarm-dot--warning  { background-color: var(--color-alarm-warning);  color: var(--color-alarm-warning); }
+.alarm-dot--cleared  { background-color: var(--color-alarm-cleared);  color: var(--color-alarm-cleared); }
+
+@keyframes alarm-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-alarm-critical) 22%, transparent),
+      0 0 0 0   color-mix(in srgb, var(--color-alarm-critical) 65%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-alarm-critical) 22%, transparent),
+      0 0 0 6px color-mix(in srgb, var(--color-alarm-critical) 0%,  transparent);
+  }
+}
+
+.alarm-dot--firing.alarm-dot--critical {
+  animation: alarm-pulse 1.6s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alarm-dot--firing.alarm-dot--critical {
+    animation: none;
+  }
+}
+
+/*
+  Status pill — sharp corners (Plan A locked radii), 1px outline-variant
+  border, severity-tinted background. One pill style across the entire
+  alarms table; severity decides only the color.
+*/
+.alarm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-outline-variant);
+  font-size: var(--text-label-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-on-surface);
+  background-color: var(--color-surface-container-low);
+  white-space: nowrap;
+}
+.alarm-pill--critical {
+  background-color: color-mix(in srgb, var(--color-alarm-critical) 12%, var(--color-surface-container-lowest));
+  color:            color-mix(in srgb, var(--color-alarm-critical) 78%, var(--color-on-surface));
+  border-color:     color-mix(in srgb, var(--color-alarm-critical) 35%, var(--color-outline-variant));
+}
+.alarm-pill--warning {
+  background-color: color-mix(in srgb, var(--color-alarm-warning) 14%, var(--color-surface-container-lowest));
+  color:            color-mix(in srgb, var(--color-alarm-warning) 70%, var(--color-on-surface));
+  border-color:     color-mix(in srgb, var(--color-alarm-warning) 35%, var(--color-outline-variant));
+}
+.alarm-pill--cleared {
+  background-color: color-mix(in srgb, var(--color-alarm-cleared) 12%, var(--color-surface-container-lowest));
+  color:            color-mix(in srgb, var(--color-alarm-cleared) 70%, var(--color-on-surface));
+  border-color:     color-mix(in srgb, var(--color-alarm-cleared) 35%, var(--color-outline-variant));
+}
+
+/*
+  Site dashboard "firing alarms" badge. Two variants:
+    - .alarm-badge--quiet  — zero firing alarms; muted, low-attention.
+    - .alarm-badge--active — at least one firing alarm; critical-red attention.
+  Sits in the page header actions slot, behaves as a link.
+*/
+.alarm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-outline-variant);
+  font-size: var(--text-label-md);
+  font-weight: 500;
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface-variant);
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.alarm-badge:hover {
+  background-color: var(--color-surface-container-low);
+}
+.alarm-badge--quiet .material-symbols-outlined {
+  color: var(--color-on-surface-variant);
+}
+.alarm-badge--active {
+  background-color: color-mix(in srgb, var(--color-alarm-critical) 12%, var(--color-surface-container-lowest));
+  color:            color-mix(in srgb, var(--color-alarm-critical) 80%, var(--color-on-surface));
+  border-color:     color-mix(in srgb, var(--color-alarm-critical) 35%, var(--color-outline-variant));
+  font-weight: 600;
+}
+.alarm-badge--active .material-symbols-outlined {
+  color: var(--color-alarm-critical);
+  font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24;
+}
+
+/*
+  Filter chip toolbar — borrows the operational dashboard's dense rhythm
+  (sm padding, sharp corners, outline-variant borders) so the Alarms page
+  reads as operator chrome rather than marketing.
+*/
+.alarm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  font-size: var(--text-label-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.alarm-chip:hover {
+  background-color: var(--color-surface-container-low);
+}
+.alarm-chip--active {
+  background-color: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface-container-lowest));
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-outline-variant));
+}
+/* RGY-dot chip variant — same chrome, slightly looser gap so the dot
+   reads cleanly to the left of the label. */
+.alarm-chip--dot {
+  padding-inline-start: 8px;
+}
+
+/*
+  Alarms filter toolbar — single flex-wrap row (reference mock):
+  surface-container-low panel, gap-md, search flex-1, segments, plain selects, icon tail.
+*/
+.alarms-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-low);
+}
+
+/* Segmented rail — severity toggles: off = muted gray (“all levels”); on = RGY tint */
+.alarms-severity-segment .alarm-chip--segment {
+  padding: 4px 12px;
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.alarms-severity-segment .alarm-chip--segment:hover {
+  background-color: var(--color-surface-container-low);
+  color: var(--color-on-surface);
+}
+
+/*
+  Selected state follows the *live* checkbox (label:has), not server-pushed classes:
+  the filter form sits outside the Turbo Frame that swaps the table, so ERB-only
+  “active” classes would never update after a click — :has gives immediate RGY feedback.
+*/
+.alarms-severity-segment .alarm-chip--segment:has(input[type="checkbox"]:checked) {
+  font-weight: 600;
+  border-style: solid;
+  border-width: 1px;
+  transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.alarms-severity-segment .alarm-chip--segment:has(input[type="checkbox"]:checked).alarm-chip--segment-critical {
+  background-color: color-mix(in srgb, var(--color-alarm-critical) 26%, var(--color-surface-container-lowest));
+  color: color-mix(in srgb, var(--color-alarm-critical) 92%, var(--color-on-surface));
+  border-color: color-mix(in srgb, var(--color-alarm-critical) 55%, var(--color-outline-variant));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-alarm-critical) 22%, transparent);
+}
+
+.alarms-severity-segment .alarm-chip--segment:has(input[type="checkbox"]:checked).alarm-chip--segment-warning {
+  background-color: color-mix(in srgb, var(--color-alarm-warning) 28%, var(--color-surface-container-lowest));
+  color: color-mix(in srgb, var(--color-alarm-warning) 88%, var(--color-on-surface));
+  border-color: color-mix(in srgb, var(--color-alarm-warning) 52%, var(--color-outline-variant));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-alarm-warning) 20%, transparent);
+}
+
+.alarms-severity-segment .alarm-chip--segment:has(input[type="checkbox"]:checked).alarm-chip--segment-cleared {
+  background-color: color-mix(in srgb, var(--color-alarm-cleared) 24%, var(--color-surface-container-lowest));
+  color: color-mix(in srgb, var(--color-alarm-cleared) 88%, var(--color-on-surface));
+  border-color: color-mix(in srgb, var(--color-alarm-cleared) 48%, var(--color-outline-variant));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-alarm-cleared) 18%, transparent);
+}
+
+.alarms-severity-segment .alarm-chip--segment:has(input[type="checkbox"]:checked):hover {
+  filter: brightness(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alarms-severity-segment .alarm-chip--segment:has(input[type="checkbox"]:checked) {
+    transition: none;
+  }
+}
+
+/* Search — original touch target / typography; width capped so the field doesn’t span the whole toolbar */
+.alarms-search-field {
+  position: relative;
+  flex: 1 1 300px;
+  min-width: min(300px, 100%);
+  max-width: min(32rem, 100%);
+  display: flex;
+  align-items: center;
+}
+
+.alarms-search-field__icon {
+  position: absolute;
+  inset-inline-start: var(--spacing-sm);
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  font-size: 20px;
+  color: var(--color-outline);
+  pointer-events: none;
+}
+
+.alarms-search-field__input {
+  width: 300px;
+  padding: var(--spacing-sm) 0 var(--spacing-sm) 2.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  font-size: var(--text-body-md);
+  line-height: 1.4;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.alarms-search-field__input::placeholder {
+  color: var(--color-on-surface-variant);
+}
+
+.alarms-search-field__input:hover {
+  background-color: var(--color-surface-container-lowest);
+}
+
+.alarms-search-field__input:focus {
+  outline: none;
+  border-color: var(--color-primary-container);
+  background-color: var(--color-surface-container-lowest);
+}
+
+/* Fieldset reset + segment chrome */
+.alarms-filter-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.alarms-filter-group.alarms-severity-segment {
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-highest);
+}
+
+.alarms-filter-selects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.alarms-select-plain {
+  max-width: 14rem;
+  min-width: 8rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  font-size: var(--text-body-md);
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.alarms-select-plain:hover {
+  background-color: var(--color-surface-container-low);
+}
+
+.alarms-select-plain:focus {
+  outline: none;
+  border-color: var(--color-primary-container);
+}
+
+/* Alarms filter: site picker fixed width (overrides .alarms-select-plain min/max) */
+select#site_id.alarms-select-plain {
+  width: 125px;
+  min-width: 125px;
+  max-width: 125px;
+  height: 40px;
+}
+
+/* Severity word beside dot — matches mock “CRITICAL / WARNING” column */
+.alarm-severity-label--critical {
+  color: var(--color-alarm-critical);
+}
+.alarm-severity-label--warning {
+  color: var(--color-alarm-warning);
+}
+.alarm-severity-label--cleared {
+  color: var(--color-alarm-cleared);
+}
+
+/* Table shell + dense body (mock: flat white panel, outline header row) */
+.alarms-table-panel {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  background-color: var(--color-surface-container-lowest);
+}
+
+.alarms-data-table__th {
+  padding: 8px 16px;
+  vertical-align: middle;
+}
+
+/* Alarm codes (E-nnn) — mono + nowrap; min width so “E-” never stacks above digits */
+.alarms-data-table__th--code,
+.alarms-data-table__td--code {
+  width: 1%;
+  min-width: 6.75rem;
+  white-space: nowrap;
+}
+
+/* Single-line preference: headers + short telemetry cells */
+.alarms-data-table__th--nowrap,
+.alarms-data-table__td--nowrap {
+  white-space: nowrap;
+}
+
+/*
+  Site / org / actor names: one line; long strings ellipsize (full string in title=).
+  min-width:0 lets flex/scroll tables shrink so ellipsis can engage.
+*/
+.alarms-data-table__td--clip {
+  max-width: 20rem;
+  min-width: 0;
+}
+
+.alarms-data-table__cell-line {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alarms-data-table__body .alarms-data-table__td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+.alarms-data-table thead tr {
+  background-color: var(--color-surface-container-low);
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.alarms-data-table__body tr {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-outline-variant) 30%, transparent);
+}
+
+.alarms-data-table__body tr:last-child {
+  border-bottom: 0;
+}
+
+/*
+  Row actions: always occupy space; visually muted until the row is hovered
+  or contains keyboard focus (reads “out of focus” vs “active”).
+*/
+.alarm-row-actions {
+  opacity: 0.38;
+  transition: opacity 160ms ease;
+}
+
+.alarms-data-table__row:hover .alarm-row-actions,
+.alarms-data-table__row:focus-within .alarm-row-actions {
+  opacity: 1;
+}
+
+.alarms-table-pagination .alarms-page-nav-btn {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface-variant);
+  transition: background-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.alarms-table-pagination .alarms-page-nav-btn:hover {
+  background-color: var(--color-surface-container-low);
+  color: var(--color-on-surface);
+}
+
+.alarms-table-pagination .alarms-page-nav-btn--disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* Tighter Ack / Clear to match mock table row actions */
+.alarm-action-btn--table {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.alarm-action-btn--table .alarm-action-btn__icon {
+  font-size: 16px;
+}
+
+/*
+  Row actions — Acknowledge / Clear. Compact icon+label by default; on
+  smaller screens (where the actions cell competes for horizontal room)
+  the label collapses into a sr-only string so only the icon is shown.
+  The icon is always tooltipped via title= on the surrounding button.
+*/
+.alarm-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+  font-size: var(--text-label-md);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+.alarm-action-btn__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.alarm-action-btn--ghost {
+  background-color: var(--color-surface-container-lowest);
+  color: var(--color-on-surface);
+  border-color: var(--color-outline-variant);
+}
+.alarm-action-btn--ghost:hover {
+  background-color: var(--color-surface-container);
+}
+.alarm-action-btn--primary {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.alarm-action-btn--primary:hover {
+  opacity: 0.95;
+}
+/* Default: every label visible. Two icons that look alike (check_circle /
+   task_alt / etc.) plus no text is unreadable; we always carry words.
+   Short variants ("Ack") show below lg; full variants ("Acknowledge")
+   show at lg+. Clear stays "Clear" at every width — it's already short. */
+.alarm-action-btn__label--short { display: inline; }
+.alarm-action-btn__label--full  { display: none; }
+@media (min-width: 1024px) {
+  .alarm-action-btn__label--short { display: none; }
+  .alarm-action-btn__label--full  { display: inline; }
+}
+

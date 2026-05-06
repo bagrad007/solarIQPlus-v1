@@ -20,21 +20,6 @@
     </noscript>
   </div>
 
-  <%# Forecast + open cases — same ERB pattern as the operational dashboard / Stitch mock footer row %>
-  <section class="grid w-full min-w-0 grid-cols-1 gap-md sm:grid-cols-2"
-           aria-label="Forecast solar production">
-    <%= render "sites/forecast_tile",
-               label:         "Forecast Solar Production Today",
-               projected_kwh: @forecast[:today_kwh],
-               condition:     @forecast[:today_condition],
-               high_f:        @forecast[:today_temp_high_f] %>
-    <%= render "sites/forecast_tile",
-               label:         "Forecast Solar Production Tomorrow",
-               projected_kwh: @forecast[:tomorrow_kwh],
-               condition:     @forecast[:tomorrow_condition],
-               high_f:        @forecast[:tomorrow_temp_high_f] %>
-  </section>
-
   <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm w-full min-w-0">
     <div class="flex flex-wrap items-center justify-between gap-sm mb-sm">
       <h2 class="text-headline-md font-[family-name:var(--font-display-serif)] text-on-surface tracking-tight">Open cases on this site</h2>
