@@ -38,6 +38,7 @@ class SiteDiagnostics
       today: today_tiles(today_rows, latest),
       today_pie: today_pie(today_rows),
       energy_flow: energy_flow(latest),
+      latest: latest_section(latest),
       last_7_days: week_totals(week_rows),
       import_export_series: import_export_series(chart_rows),
       solar_7d_series: solar_7d_series(week_rows)
@@ -169,13 +170,41 @@ class SiteDiagnostics
 
   # --- 12h signed series ------------------------------------------------------
 
+  # Each point: { t:, kw:, ac_v? } — +ac_v+ is added only when the underlying
+  # telemetry row carried `ac_voltage`, so the React side can decide whether to
+  # render the optional voltage sparkline (no fake voltage data when missing).
   def import_export_series(rows)
     rows.map do |r|
-      {
-        t: r.recorded_at.utc.iso8601,
-        kw: ((r.metric_payload || {})["grid_flow_kw"] || 0).to_f.round(2)
+      payload = r.metric_payload || {}
+      point = {
+        t:  r.recorded_at.utc.iso8601,
+        kw: (payload["grid_flow_kw"] || 0).to_f.round(2)
       }
+      v = payload["ac_voltage"]
+      point[:ac_v] = v.to_f.round(1) if v.present?
+      point
     end
+  end
+
+  # --- live inverter snapshot for the diagnostics rail ----------------------
+
+  # Latest inverter snapshot used by the left-rail "System Status" / asset
+  # telemetry tiles. Mirrors the keys SiteOperationalSummary#latest_section
+  # exposes for the operational dashboard so the diagnostics React island can
+  # share the same field names. Every value is nil when there is no telemetry.
+  def latest_section(row)
+    payload = row&.metric_payload || {}
+    {
+      ac_power_kw:     payload["power_kw"]&.to_f,
+      dc_power_kw:     payload["dc_power_kw"]&.to_f,
+      dc_amps:         payload["dc_amps"]&.to_f,
+      ac_amps:         payload["ac_amps"]&.to_f,
+      dc_voltage:      payload["string_voltage"],
+      ac_voltage:      payload["ac_voltage"],
+      alarm_state:     row&.alarm_state,
+      inverter_status: payload["inverter_status"],
+      recorded_at:     row&.recorded_at
+    }
   end
 
   # --- 7-day daily kWh bars ---------------------------------------------------

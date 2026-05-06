@@ -178,6 +178,63 @@ class SiteDiagnosticsTest < ActiveSupport::TestCase
                  "a 4h gap exceeds the 1h cap so the trapezoid contribution is dropped"
   end
 
+  test "latest section exposes the most recent inverter snapshot for the diagnostics rail" do
+    insert_telemetry([
+      {
+        offset:          -10.minutes,
+        power_kw:        4.21,
+        grid_flow_kw:    1.5,
+        inverter_temp_c: 41,
+        dc_power_kw:     4.42,
+        dc_amps:         11.05,
+        ac_amps:         17.6,
+        string_voltage:  400,
+        ac_voltage:      240,
+        inverter_status: "online",
+        alarm_state:     "warn"
+      }
+    ])
+
+    latest = SiteDiagnostics.new(@site, now: @reference).to_h[:latest]
+
+    assert_equal 4.21,      latest[:ac_power_kw]
+    assert_equal 4.42,      latest[:dc_power_kw]
+    assert_equal 17.6,      latest[:ac_amps]
+    assert_equal 11.05,     latest[:dc_amps]
+    assert_equal 240,       latest[:ac_voltage]
+    assert_equal 400,       latest[:dc_voltage]
+    assert_equal "online",  latest[:inverter_status]
+    assert_equal "warn",    latest[:alarm_state]
+    assert_equal((@reference - 10.minutes).to_i, latest[:recorded_at].to_i)
+  end
+
+  test "latest section returns nil values when there is no telemetry at all" do
+    latest = SiteDiagnostics.new(@site, now: @reference).to_h[:latest]
+
+    assert_nil latest[:ac_power_kw]
+    assert_nil latest[:dc_power_kw]
+    assert_nil latest[:ac_amps]
+    assert_nil latest[:dc_amps]
+    assert_nil latest[:ac_voltage]
+    assert_nil latest[:dc_voltage]
+    assert_nil latest[:alarm_state]
+    assert_nil latest[:inverter_status]
+    assert_nil latest[:recorded_at]
+  end
+
+  test "import_export_series carries ac_v only when the underlying telemetry has ac_voltage" do
+    insert_telemetry([
+      { offset: -1.hour,    power_kw: 3.0, grid_flow_kw: 1.0, ac_voltage: 240 },
+      { offset: -30.minutes, power_kw: 3.5, grid_flow_kw: 1.5 }
+    ])
+
+    series = SiteDiagnostics.new(@site, now: @reference).to_h[:import_export_series]
+
+    assert_equal 2, series.length
+    assert_equal 240.0, series.first[:ac_v], "first point should expose AC mains voltage"
+    assert_nil series.last[:ac_v], "second point has no ac_voltage in telemetry, must omit ac_v as nil"
+  end
+
   test "no telemetry returns zeroed tiles and seven empty buckets" do
     payload = SiteDiagnostics.new(@site, now: @reference).to_h
 
@@ -206,9 +263,15 @@ class SiteDiagnosticsTest < ActiveSupport::TestCase
         metric_payload: {
           "power_kw"        => r[:power_kw],
           "grid_flow_kw"    => r[:grid_flow_kw],
-          "inverter_temp_c" => r[:inverter_temp_c]
+          "inverter_temp_c" => r[:inverter_temp_c],
+          "dc_power_kw"     => r[:dc_power_kw],
+          "dc_amps"         => r[:dc_amps],
+          "ac_amps"         => r[:ac_amps],
+          "ac_voltage"      => r[:ac_voltage],
+          "string_voltage"  => r[:string_voltage],
+          "inverter_status" => r[:inverter_status]
         }.compact,
-        alarm_state: "normal"
+        alarm_state: r[:alarm_state] || "normal"
       )
     end
   end
