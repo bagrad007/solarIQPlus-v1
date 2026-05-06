@@ -6,16 +6,16 @@ The database is the security boundary: every access decision reduces to PostgreS
 
 ## Stack
 
-| Component   | Version  | Notes                                                                 |
-|-------------|----------|-----------------------------------------------------------------------|
-| Ruby        | 3.4.9    | Native arm64 build via rbenv on Apple Silicon.                        |
-| Rails       | 8.1.3    | 8.1 series receives bug fixes through October 2026.                   |
-| PostgreSQL  | 18.3     | `uuidv7()` is a built-in; telemetry uses it for time-local ids. Sort order is still `recorded_at`, never `id` (uuidv7 is per-generator-monotonic only). |
-| Devise      | 5.0.3    | Auth.                                                                 |
-| Tailwind    | v4.2.4   | CSS-first config in `app/assets/stylesheets/application.tailwind.css`.|
-| esbuild     | 0.28+    | JS bundling. Plan B will mount a React island here.                   |
-| turbo-rails | 8.0.23   | Hotwire stack.                                                        |
-| stimulus-rails | 1.3+   |                                                                       |
+| Component      | Version | Notes                                                                                                                                                   |
+| -------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ruby           | 3.4.9   | Native arm64 build via rbenv on Apple Silicon.                                                                                                          |
+| Rails          | 8.1.3   | 8.1 series receives bug fixes through October 2026.                                                                                                     |
+| PostgreSQL     | 18.3    | `uuidv7()` is a built-in; telemetry uses it for time-local ids. Sort order is still `recorded_at`, never `id` (uuidv7 is per-generator-monotonic only). |
+| Devise         | 5.0.3   | Auth.                                                                                                                                                   |
+| Tailwind       | v4.2.4  | CSS-first config in `app/assets/stylesheets/application.tailwind.css`.                                                                                  |
+| esbuild        | 0.28+   | JS bundling. Plan B will mount a React island here.                                                                                                     |
+| turbo-rails    | 8.0.23  | Hotwire stack.                                                                                                                                          |
+| stimulus-rails | 1.3+    |                                                                                                                                                         |
 
 ## Architectural Invariants (non-negotiable)
 
@@ -39,5 +39,3 @@ bin/dev
 ```bash
 bin/rails test
 ```
-
-Plan A's Definition of Done is the green test battery in `test/` covering all four invariants.

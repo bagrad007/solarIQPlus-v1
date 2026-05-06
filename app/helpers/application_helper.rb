@@ -5,44 +5,48 @@ module ApplicationHelper
     case Current.effective_organization&.org_type
     when "maverick"
       [
-        { label: "Dashboard",  path: dashboard_path,  icon: "dashboard" },
-        { label: "Cases",      path: cases_path,      icon: "support_agent" },
-        { label: "Audit Logs", path: audit_logs_path, icon: "fact_check" }
+        { label: "Dashboard",   path: dashboard_path,   icon: "dashboard" },
+        { label: "Diagnostics", path: diagnostics_path, icon: "monitoring" },
+        { label: "Cases",       path: cases_path,       icon: "support_agent" },
+        { label: "Audit Logs",  path: audit_logs_path,  icon: "fact_check" }
       ]
     when "partner"
       [
         { label: "Dashboard",        path: dashboard_path,         icon: "dashboard" },
+        { label: "Diagnostics",      path: diagnostics_path,       icon: "monitoring" },
         { label: "Customer Manager", path: customer_manager_path,  icon: "groups" },
         { label: "Cases",            path: cases_path,             icon: "support_agent" }
       ]
     when "customer"
       [
-        { label: "Dashboard", path: dashboard_path, icon: "dashboard" },
-        { label: "Cases",     path: cases_path,     icon: "support_agent" }
+        { label: "Dashboard",   path: dashboard_path,   icon: "dashboard" },
+        { label: "Diagnostics", path: diagnostics_path, icon: "monitoring" },
+        { label: "Cases",       path: cases_path,       icon: "support_agent" }
       ]
     else
       []
     end
   end
 
-  # Bottom nav appears only on the three high-traffic touchpoints in the
-  # mobile-supported scope (per Plan A: Dashboard/Sites/Cases).
-  def mobile_nav_visible?
-    [dashboard_path, cases_path].include?(request.path) ||
-      request.path.match?(%r{\A/sites(/|\z)})
+  # Sidebar / mobile account: effective tenant name (view-as uses the
+  # impersonated org), not individual user names.
+  def nav_account_scope_name
+    Current.effective_organization&.name.presence \
+      || current_user.organization&.name.presence \
+      || "SolarIQ+"
   end
 
-  def mobile_nav_items
-    [
-      { label: "Dashboard", path: dashboard_path, icon: "dashboard" },
-      { label: "Cases",     path: cases_path,     icon: "support_agent" }
-    ]
+  def nav_account_scope_initial
+    ch = nav_account_scope_name.to_s.strip[/[[:alnum:]]/u]
+    ch&.upcase || "?"
   end
 
   # True when the current page is "about" exactly one Customer organization
-  # — the AI Energy Analyst widget renders only here. Roll-up pages
-  # (Maverick partner list, Partner customer list, plain dashboard index)
-  # never have a single Customer in scope, so the widget stays hidden.
+  # — the AI Energy Analyst widget renders here (site dashboard, diagnostics#show,
+  # customer org drill-down, case on a customer site). Roll-up pages
+  # (Maverick partner list, Partner customer list, plain dashboard index,
+  # diagnostics index) never have a single Customer site in scope, so the
+  # widget stays hidden.
   #
   # The widget partial accepts an optional `context_label` local; callers
   # pass the most specific name available (site → customer org name).

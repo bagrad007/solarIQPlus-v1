@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
-  allow_browser versions: :modern
+  # Machine clients under /mcp/ (Bearer token) often send non-browser user agents.
+  allow_browser versions: :modern, if: -> { !request.path.start_with?("/mcp/") }
 
   before_action :authenticate_user!
   before_action :set_current_attributes

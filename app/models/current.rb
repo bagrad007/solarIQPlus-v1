@@ -23,7 +23,18 @@ class Current < ActiveSupport::CurrentAttributes
     impersonated_organization || organization
   end
 
+  # Effective Logo for the current request. Calls the SECURITY DEFINER
+  # `app.effective_logo_url(uuid)` so the ancestry walk works for Customer
+  # users (whose RLS scope hides parent Partner rows from a plain Active
+  # Record `parent` association). The Ruby Organization#effective_logo_url
+  # method is retained for non-RLS contexts (model tests, console).
   def effective_logo_url
-    effective_organization&.effective_logo_url
+    org_id = effective_organization&.id
+    return nil unless org_id
+    ActiveRecord::Base.connection.select_value(
+      "SELECT app.effective_logo_url($1)",
+      "EffectiveLogo",
+      [ org_id ]
+    )
   end
 end

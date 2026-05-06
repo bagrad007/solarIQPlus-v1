@@ -1,30 +1,46 @@
-<% trail = BreadcrumbTrail.for(controller) %>
-<% if trail.present? %>
-  <% parent = trail[0...-1].reverse_each.find { |s| s.path.present? } %>
-  <% sticky_top = Current.in_view_as? ? "top-14" : "top-0" %>
+<%
+  trail      = BreadcrumbTrail.for(controller)
+  parent     = trail.present? ? trail[0...-1].reverse_each.find { |s| s.path.present? } : nil
+  sticky_top = Current.in_view_as? ? "top-14" : "top-0"
+%>
 
-  <% if parent.present? %>
-    <div class="md:hidden mb-md">
-      <%= link_to parent.path,
-                  class: "inline-flex items-center gap-xs text-label-md text-primary hover:underline" do %>
-        <span class="material-symbols-outlined text-base">arrow_back</span>
-        <span>Back to <%= parent.label %></span>
+<%# Mobile: back link (if any). The brand logo slot has moved to the %>
+<%# mobile top app bar (shared/_mobile_top_app_bar) so we don't double-stamp %>
+<%# brand on every detail page. The row collapses cleanly when no parent. %>
+<% if parent.present? %>
+  <div class="md:hidden flex items-center gap-md mb-md">
+    <%= link_to parent.path,
+                class: "inline-flex items-center gap-xs text-label-md text-primary hover:underline" do %>
+      <span class="material-symbols-outlined text-base">arrow_back</span>
+      <span>Back to <%= parent.label %></span>
+    <% end %>
+  </div>
+<% end %>
+
+<%# Desktop: breadcrumb on the left (when present), brand logo always on the right. %>
+<%# data-testid stays on the inner <nav> so customer pages without a trail still %>
+<%# satisfy "no breadcrumb-trail element" while the logo continues to render. %>
+<div class="hidden md:flex flex-wrap items-center justify-between gap-md text-label-sm text-on-surface-variant border-b border-outline-variant pb-sm mb-md sticky z-30 bg-background <%= sticky_top %>">
+  <% if trail.present? %>
+    <nav class="flex flex-wrap items-center gap-x-xs gap-y-xs"
+         aria-label="Breadcrumb"
+         data-testid="breadcrumb-trail">
+      <% trail.each_with_index do |crumb, i| %>
+        <% if i.positive? %>
+          <span class="text-on-surface-variant" aria-hidden="true">/</span>
+        <% end %>
+        <% if crumb.path.present? %>
+          <%= link_to crumb.label, crumb.path, class: "text-primary hover:underline" %>
+        <% else %>
+          <span class="text-on-surface"><%= crumb.label %></span>
+        <% end %>
       <% end %>
-    </div>
+    </nav>
+  <% else %>
+    <div></div>
   <% end %>
 
-  <nav class="hidden md:flex flex-wrap items-center gap-x-xs gap-y-xs text-label-sm text-on-surface-variant border-b border-outline-variant pb-sm mb-md sticky z-30 bg-background <%= sticky_top %>"
-       aria-label="Breadcrumb"
-       data-testid="breadcrumb-trail">
-    <% trail.each_with_index do |crumb, i| %>
-      <% if i.positive? %>
-        <span class="text-on-surface-variant" aria-hidden="true">/</span>
-      <% end %>
-      <% if crumb.path.present? %>
-        <%= link_to crumb.label, crumb.path, class: "text-primary hover:underline" %>
-      <% else %>
-        <span class="text-on-surface"><%= crumb.label %></span>
-      <% end %>
-    <% end %>
-  </nav>
-<% end %>
+  <%= image_tag "solar_iq_logo.png",
+                alt: "SolarIQ+",
+                class: "h-8 w-auto shrink-0" %>
+</div>

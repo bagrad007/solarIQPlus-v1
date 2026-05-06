@@ -1,0 +1,48 @@
+<%#
+  Ambient + forecast readouts (same facts as former AmbientPanel.jsx).
+  Locals: environment — Hash from SiteOperationalSummary; forecast — SiteForecast#to_h
+%>
+<% environment = (local_assigns[:environment] || {}).symbolize_keys %>
+<% forecast = (local_assigns[:forecast] || {}).symbolize_keys %>
+<%
+  sky_display = environment[:sky_condition].to_s.presence&.humanize
+  cond_display = forecast[:today_condition].to_s.presence&.humanize
+
+  rows = []
+  if environment[:peak_sun_hours_today].present?
+    rows << { icon: "wb_sunny", label: "Peak sun (today)", value: "#{environment[:peak_sun_hours_today]} h", sub: sky_display }
+  end
+  if environment[:ambient_temp_f].present?
+    rows << { icon: "air", label: "Ambient (sensor)", value: "#{environment[:ambient_temp_f]}°F", sub: nil }
+  end
+  if forecast[:today_temp_high_f].present?
+    rows << { icon: "thermostat", label: "Forecast high today", value: "#{forecast[:today_temp_high_f]}°F", sub: cond_display }
+  end
+  if environment[:inverter_temp_f].present?
+    rows << { icon: "device_thermostat", label: "Inverter heatsink", value: "#{environment[:inverter_temp_f]}°F", sub: nil }
+  end
+%>
+<% if rows.any? %>
+  <section class="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm"
+           aria-label="Ambient and forecast">
+    <h3 class="text-label-sm font-semibold uppercase tracking-wide text-on-surface-variant mb-sm">
+      Ambient &amp; forecast
+    </h3>
+    <div class="flex flex-col gap-sm">
+      <% rows.each do |r| %>
+        <div class="flex items-start gap-sm min-w-0">
+          <span class="material-symbols-outlined shrink-0 text-primary-container text-[22px]"
+                style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+                aria-hidden="true"><%= r[:icon] %></span>
+          <div class="min-w-0 flex-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-on-surface-variant block"><%= r[:label] %></span>
+            <span class="text-headline-md font-semibold text-on-surface leading-tight"><%= r[:value] %></span>
+            <% if r[:sub].present? %>
+              <span class="text-label-sm text-on-surface-variant block mt-xs"><%= r[:sub] %></span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+<% end %>

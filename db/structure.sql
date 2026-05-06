@@ -143,6 +143,30 @@ $$;
 
 
 --
+-- Name: effective_logo_url(uuid); Type: FUNCTION; Schema: app; Owner: -
+--
+
+CREATE FUNCTION app.effective_logo_url(target_org_id uuid) RETURNS text
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'pg_catalog', 'public', 'app'
+    AS $$
+DECLARE
+  result text;
+BEGIN
+  SELECT nullif(branding_config->>'logo_url', '')
+  INTO result
+  FROM organizations
+  WHERE path @> (SELECT path FROM organizations WHERE id = target_org_id)
+    AND nullif(branding_config->>'logo_url', '') IS NOT NULL
+  ORDER BY nlevel(path) DESC
+  LIMIT 1;
+
+  RETURN result;
+END
+$$;
+
+
+--
 -- Name: effective_org_id(); Type: FUNCTION; Schema: app; Owner: -
 --
 
@@ -537,6 +561,9 @@ CREATE TABLE public.sites (
     polling_interval_seconds integer DEFAULT 30 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    latitude numeric(9,6),
+    longitude numeric(9,6),
+    nameplate_kw numeric(6,2),
     CONSTRAINT sites_name_not_blank CHECK ((length(btrim(name)) > 0)),
     CONSTRAINT sites_polling_interval_positive CHECK ((polling_interval_seconds > 0))
 );
@@ -1764,6 +1791,8 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260506143000'),
+('20260505181440'),
 ('20260505124000'),
 ('20260504151600'),
 ('20260504151500'),

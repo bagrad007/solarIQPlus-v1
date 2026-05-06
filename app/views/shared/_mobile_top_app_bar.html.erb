@@ -1,0 +1,31 @@
+<%# Mobile-only tenant chrome (md:hidden). The desktop sidebar renders %>
+<%# the Effective Logo at ≥ md; below md the sidebar is hidden, so this %>
+<%# bar carries the Partner brand on phone-sized viewports. %>
+<%# %>
+<%# The avatar trigger here lives inside the data-controller="mobile-account-sheet" %>
+<%# wrapper rendered in application.html.erb, which also contains the %>
+<%# bottom-anchored account sheet. They communicate via the existing %>
+<%# Stimulus controller; tap-outside detection works because both the %>
+<%# trigger and the sheet share that wrapper as their controller root. %>
+<header data-testid="mobile-top-app-bar"
+        class="md:hidden sticky top-0 z-30 flex items-center justify-between gap-md
+               bg-surface-container-low border-b border-outline-variant
+               px-margin h-12">
+  <% if Current.effective_logo_url.present? %>
+    <img src="<%= Current.effective_logo_url %>"
+         alt="<%= Current.effective_organization&.name %>"
+         class="h-7 w-auto max-w-[160px] object-contain">
+  <% else %>
+    <%= image_tag "solar_iq_logo.png", alt: "SolarIQ+", class: "h-7 w-auto" %>
+  <% end %>
+
+  <button type="button"
+          data-mobile-account-sheet-target="button"
+          data-action="click->mobile-account-sheet#toggle"
+          aria-expanded="false"
+          aria-controls="mobile-account-sheet"
+          aria-label="Account"
+          class="h-8 w-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-semibold shrink-0">
+    <%= nav_account_scope_initial %>
+  </button>
+</header>

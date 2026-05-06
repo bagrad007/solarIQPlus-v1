@@ -1,5 +1,9 @@
 <% provide(:title, "#{@site.name} — Operational Dashboard") %>
 
+<% content_for :head do %>
+  <%= javascript_include_tag "dashboard", "data-turbo-track": "reload", type: "module", defer: true %>
+<% end %>
+
 <%
   actions = capture do
     unless Current.in_view_as?
@@ -16,63 +20,42 @@
            subtitle: "Operational dashboard",
            actions: actions %>
 
-<% latest_payload = (@latest&.metric_payload || {}).with_indifferent_access %>
+<% dashboard_payload = @summary.merge(forecast: @forecast) %>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-md mb-margin">
-  <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
-    <div class="text-label-sm text-on-surface-variant uppercase">Generation now</div>
-    <div class="text-display-lg text-primary mt-xs">
-      <%= number_with_delimiter(latest_payload[:power_kw].to_f.round(1)) %><span class="text-headline-md text-on-surface-variant ml-xs">kW</span>
-    </div>
-    <p class="text-label-sm text-on-surface-variant mt-sm">
-      Capacity factor: <%= (latest_payload[:capacity_factor].to_f * 100).round(1) %>%
-    </p>
+<div class="mb-margin flex w-full min-w-0 max-w-full flex-col gap-lg">
+  <%# Full-width summary row (two cards side-by-side from md), then charts in one column below. %>
+  <div class="w-full min-w-0" role="complementary" aria-label="Generation context">
+    <%= render "dashboard_sidebar_column", summary: @summary, forecast: @forecast %>
+  </div>
+  <div class="block w-full min-h-0 min-w-0"
+       data-dashboard-mount
+       data-payload="<%= dashboard_payload.to_json %>">
+    <noscript>
+      <p class="text-label-md text-on-surface-variant italic">
+        Live charts require JavaScript. The summary cards above remain accurate.
+      </p>
+    </noscript>
   </div>
 
-  <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
-    <div class="text-label-sm text-on-surface-variant uppercase">Alarm state</div>
-    <% case @latest&.alarm_state %>
-    <% when "critical" %>
-      <div class="text-headline-lg text-error mt-xs">Critical</div>
-    <% when "warn" %>
-      <div class="text-headline-lg text-secondary mt-xs">Warning</div>
-    <% when "normal" %>
-      <div class="text-headline-lg text-primary mt-xs">Normal</div>
-    <% else %>
-      <div class="text-headline-lg text-on-surface-variant mt-xs">No data</div>
-    <% end %>
-    <p class="text-label-sm text-on-surface-variant mt-sm">
-      <% if @latest %>
-        Last reading <%= time_ago_in_words(@latest.recorded_at) %> ago
-      <% else %>
-        Awaiting first reading
-      <% end %>
-    </p>
-  </div>
+<%# ---- Forecast tiles (ERB) — remain readable without JS ---- %>
+  <section class="grid grid-cols-1 sm:grid-cols-2 gap-md"
+           aria-label="Forecast solar production">
+  <%= render "forecast_tile",
+             label:         "Forecast Solar Production Today",
+             projected_kwh: @forecast[:today_kwh],
+             condition:     @forecast[:today_condition],
+             high_f:        @forecast[:today_temp_high_f] %>
+  <%= render "forecast_tile",
+             label:         "Forecast Solar Production Tomorrow",
+             projected_kwh: @forecast[:tomorrow_kwh],
+             condition:     @forecast[:tomorrow_condition],
+             high_f:        @forecast[:tomorrow_temp_high_f] %>
+  </section>
 
-  <div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
-    <div class="text-label-sm text-on-surface-variant uppercase">Site Asset Parameters</div>
-    <dl class="text-label-md mt-sm space-y-xs">
-      <div class="flex justify-between"><dt class="text-on-surface-variant">Inverter</dt><dd><%= latest_payload[:inverter_status] || "—" %></dd></div>
-      <div class="flex justify-between"><dt class="text-on-surface-variant">String voltage</dt><dd><%= latest_payload[:string_voltage] %> V</dd></div>
-      <div class="flex justify-between"><dt class="text-on-surface-variant">Ambient temp</dt><dd><%= latest_payload[:ambient_temp_c] %> °C</dd></div>
-      <div class="flex justify-between"><dt class="text-on-surface-variant">Polling</dt><dd><%= @site.polling_interval_seconds %> s</dd></div>
-    </dl>
-  </div>
-</div>
-
-<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md mb-margin">
-  <h2 class="text-headline-md mb-sm">Generation — last 48 readings</h2>
-  <%= render "shared/sparkline", values: @recent.map { |t| (t.metric_payload["power_kw"] || 0).to_f }.reverse %>
-  <p class="text-label-sm text-on-surface-variant mt-sm">
-    Live charting wires up in Plan B (React diagnostics island). Plan A renders the latest readings as a static sparkline placeholder.
-  </p>
-</div>
-
-<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
+<%# ---- Open cases ---- %>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md shadow-sm">
   <div class="flex items-center justify-between mb-sm">
     <h2 class="text-headline-md">Open cases on this site</h2>
-    <%= link_to "All cases", site_cases_path(@site), class: "text-label-md text-primary hover:underline" if false %>
   </div>
   <% if @open_cases.empty? %>
     <p class="text-label-md text-on-surface-variant">No open cases on this site.</p>
@@ -86,6 +69,8 @@
       <% end %>
     </ul>
   <% end %>
+</div>
+
 </div>
 
 <%= render "shared/ai_energy_analyst_widget", context_label: customer_scope_label if customer_scope_present? %>

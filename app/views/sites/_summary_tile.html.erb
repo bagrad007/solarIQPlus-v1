@@ -1,0 +1,21 @@
+<%#
+  Generic numeric tile used across Dashboard sections A, C, and D. Local
+  variables:
+    label: required string label for the metric
+    value: numeric value (or nil for "—")
+    unit:  optional unit suffix (e.g. "kWh", "kW", "A", "V", "°F")
+    tone:  optional style tone — "primary" | "neutral" (default neutral)
+%>
+<%
+  display_value = value.nil? ? "—" : (value.is_a?(Numeric) ? number_with_delimiter(value.round(2)) : value)
+  tone ||= "neutral"
+  value_color = (tone == "primary") ? "text-primary" : "text-on-surface"
+  unit ||= nil
+%>
+
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md">
+  <div class="text-label-sm text-on-surface-variant uppercase"><%= label %></div>
+  <div class="text-display-sm <%= value_color %> mt-xs">
+    <%= display_value %><% if unit && value %><span class="text-headline-sm text-on-surface-variant ml-xs"><%= unit %></span><% end %>
+  </div>
+</div>

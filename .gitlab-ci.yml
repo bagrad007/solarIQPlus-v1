@@ -1,0 +1,147 @@
+stages:
+  - lint
+  - security
+  - build
+  - test
+
+default:
+  image: ruby:3.4.9
+  interruptible: true
+
+variables:
+  BUNDLE_PATH: vendor/bundle
+  BUNDLE_JOBS: "4"
+  BUNDLE_RETRY: "2"
+  BUNDLE_WITHOUT: "production"
+  YARN_CACHE_FOLDER: .yarn-cache
+  RAILS_ENV: test
+  NODE_ENV: test
+  POSTGRES_DB: solar_iq_plus_v1_test
+  POSTGRES_USER: solar
+  POSTGRES_PASSWORD: solar
+  POSTGRES_HOST_AUTH_METHOD: trust
+  DATABASE_URL: "postgres://solar:solar@postgres:5432/solar_iq_plus_v1_test"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+.ruby-cache: &ruby-cache
+  key:
+    files:
+      - Gemfile.lock
+    prefix: ruby-3.4.9
+  paths:
+    - vendor/bundle
+  policy: pull-push
+
+.node-cache: &node-cache
+  key:
+    files:
+      - yarn.lock
+    prefix: node
+  paths:
+    - .yarn-cache
+    - node_modules
+  policy: pull-push
+
+.ruby-setup: &ruby-setup
+  before_script:
+    - ruby -v
+    - bundle config set --local path "$BUNDLE_PATH"
+    - bundle config set --local without "$BUNDLE_WITHOUT"
+    - bundle install --jobs "$BUNDLE_JOBS" --retry "$BUNDLE_RETRY"
+
+.node-setup: &node-setup
+  before_script:
+    - apt-get update -qq && apt-get install -y --no-install-recommends curl gnupg
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y --no-install-recommends nodejs
+    - corepack enable
+    - yarn install --frozen-lockfile --cache-folder "$YARN_CACHE_FOLDER"
+
+rubocop:
+  stage: lint
+  cache:
+    <<: *ruby-cache
+  <<: *ruby-setup
+  script:
+    - bin/rubocop --parallel --format progress
+
+brakeman:
+  stage: security
+  cache:
+    <<: *ruby-cache
+    policy: pull
+  <<: *ruby-setup
+  script:
+    - bin/brakeman --no-pager --format json --output brakeman.json || true
+    - bin/brakeman --no-pager --exit-on-warn
+  artifacts:
+    when: always
+    paths:
+      - brakeman.json
+    expire_in: 1 week
+
+bundler_audit:
+  stage: security
+  cache:
+    <<: *ruby-cache
+    policy: pull
+  <<: *ruby-setup
+  script:
+    - bin/bundler-audit update
+    - bin/bundler-audit check
+
+assets:
+  stage: build
+  image: node:20-bullseye
+  cache:
+    <<: *node-cache
+  before_script:
+    - corepack enable
+    - yarn install --frozen-lockfile --cache-folder "$YARN_CACHE_FOLDER"
+  script:
+    - yarn build
+    - yarn build:css
+  artifacts:
+    paths:
+      - app/assets/builds/
+    expire_in: 1 day
+
+test:
+  stage: test
+  needs:
+    - job: rubocop
+      artifacts: false
+    - job: assets
+      artifacts: true
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  cache:
+    - <<: *ruby-cache
+      policy: pull
+    - <<: *node-cache
+      policy: pull
+  before_script:
+    - apt-get update -qq && apt-get install -y --no-install-recommends curl gnupg postgresql-client
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y --no-install-recommends nodejs
+    - corepack enable
+    - bundle config set --local path "$BUNDLE_PATH"
+    - bundle config set --local without "$BUNDLE_WITHOUT"
+    - bundle install --jobs "$BUNDLE_JOBS" --retry "$BUNDLE_RETRY"
+    - yarn install --frozen-lockfile --cache-folder "$YARN_CACHE_FOLDER"
+    - until pg_isready -h postgres -U "$POSTGRES_USER"; do sleep 1; done
+    - bin/rails db:prepare
+  script:
+    - bin/rails test test:system
+  artifacts:
+    when: on_failure
+    paths:
+      - tmp/screenshots/
+      - log/test.log
+    expire_in: 1 week

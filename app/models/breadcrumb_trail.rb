@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 # Builds hierarchy breadcrumbs for Partner and Maverick personas. Maverick
-# trails anchor at "Partners" when drilling the org tree; primary sidebar
-# destinations (Cases, Audit Logs, Sites index, Customer Manager) omit that
-# home crumb so the strip matches the current nav section.
+# trails always include a linked "Partners" crumb to the dashboard when
+# drilling the org tree or on Maverick-only index pages (Cases, Audit Logs,
+# Sites). Partner primary nav pages omit a redundant "Dashboard" prefix.
 class BreadcrumbTrail
   Segment = Struct.new(:label, :path, keyword_init: true)
 
@@ -167,7 +167,7 @@ class BreadcrumbTrail
 
   def sites_index_trail
     if maverick?
-      [seg("Sites", nil)]
+      [partners_home_link, seg("Sites", nil)]
     elsif partner?
       [seg("Sites", nil)]
     else
@@ -179,7 +179,7 @@ class BreadcrumbTrail
     case @c.action_name
     when "index"
       if maverick?
-        [seg("Cases", nil)]
+        [partners_home_link, seg("Cases", nil)]
       elsif partner?
         [seg("Cases", nil)]
       else
@@ -203,7 +203,7 @@ class BreadcrumbTrail
           append_site_customer_partner(trail, kase.site)
           trail << seg("New case", nil)
         else
-          trail = [seg("Cases", h.cases_path), seg("New case", nil)]
+          trail = [partners_home_link, seg("Cases", h.cases_path), seg("New case", nil)]
         end
         trail
       elsif partner?
@@ -281,6 +281,6 @@ class BreadcrumbTrail
   def audit_logs_trail
     return [] unless maverick?
 
-    [seg("Audit Logs", nil)]
+    [partners_home_link, seg("Audit Logs", nil)]
   end
 end

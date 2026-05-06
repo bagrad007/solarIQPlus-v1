@@ -1,0 +1,44 @@
+<%#
+  Forecast Solar Production tile (today / tomorrow). Locals:
+    label:           "Forecast Solar Production Today" / "...Tomorrow"
+    projected_kwh:   numeric kWh from SiteForecast, or nil when unknown
+    condition:       "sunny" | "cloudy" | "rain" | ... (drives the icon)
+    high_f:          optional daily high °F from SiteForecast (nil when unknown)
+%>
+<%
+  high_f = local_assigns[:high_f]
+  weather_icons = {
+    "sunny"         => "wb_sunny",
+    "partly_cloudy" => "partly_cloudy_day",
+    "cloudy"        => "cloud",
+    "foggy"         => "foggy",
+    "rain"          => "rainy",
+    "snow"          => "ac_unit",
+    "thunderstorm"  => "thunderstorm",
+    "unknown"       => "help"
+  }
+  icon          = weather_icons[condition] || "help"
+  display_value = projected_kwh.nil? ? "—" : number_with_delimiter(projected_kwh.round(1))
+  data_value    = projected_kwh.nil? ? "—" : projected_kwh.round(1).to_s
+%>
+
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-md"
+     data-forecast-tile
+     data-projected-kwh="<%= data_value %>"
+     data-condition="<%= condition %>">
+  <div class="flex items-start justify-between">
+    <div class="text-label-sm text-on-surface-variant uppercase"><%= label %></div>
+    <span class="material-symbols-outlined text-solar-accent" style="font-size:24px"><%= icon %></span>
+  </div>
+  <div class="text-display-sm text-primary mt-xs">
+    <%= display_value %><% if projected_kwh %><span class="text-headline-sm text-on-surface-variant ml-xs">kWh</span><% end %>
+  </div>
+  <div class="text-label-sm text-on-surface-variant mt-xs capitalize">
+    <%= condition.to_s.tr("_", " ") %>
+  </div>
+  <% if high_f.present? %>
+    <div class="text-label-sm text-on-surface-variant mt-xs">
+      Daily high <%= number_with_precision(high_f, precision: 1, strip_insignificant_zeros: true) %> °F
+    </div>
+  <% end %>
+</div>

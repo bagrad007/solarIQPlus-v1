@@ -1,0 +1,91 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# One-shot local MCP setup:
+# - Appends SOLAR_IQ_MCP_* to .env.development.local (gitignored) if missing
+# - Writes .cursor/mcp.json (gitignored) for Cursor with the same token
+#
+# Usage:
+#   bin/setup-mcp
+#   bin/setup-mcp other@user.example   # acting user email (default: site@goose.example)
+
+require "fileutils"
+require "json"
+require "securerandom"
+
+ROOT = File.expand_path("..", __dir__)
+ENV_FILE = File.join(ROOT, ".env.development.local")
+
+def nonempty(str)
+  s = str.to_s.strip
+  s.empty? ? nil : s
+end
+CURSOR_DIR = File.join(ROOT, ".cursor")
+MCP_JSON = File.join(CURSOR_DIR, "mcp.json")
+MCP_CWD = File.join(ROOT, "solar-iq-mcp-server")
+DEFAULT_EMAIL = "site@goose.example"
+
+def read_mcp_from_env_file
+  return [ nil, nil ] unless File.readable?(ENV_FILE)
+
+  body = File.read(ENV_FILE)
+  token = body[/^SOLAR_IQ_MCP_TOKEN=(.*)$/, 1]&.strip&.delete_prefix('"')&.delete_suffix('"')&.delete_prefix("'")&.delete_suffix("'")
+  email = body[/^SOLAR_IQ_MCP_ACTING_USER_EMAIL=(.*)$/, 1]&.strip&.delete_prefix('"')&.delete_suffix('"')&.delete_prefix("'")&.delete_suffix("'")
+  [ nonempty(token), nonempty(email) ]
+end
+
+acting_email = (a = ARGV[0].to_s.strip; a.empty? ? DEFAULT_EMAIL : a)
+existing_token, existing_email = read_mcp_from_env_file
+
+token = existing_token || SecureRandom.hex(32)
+email = existing_email || acting_email
+
+if existing_token.nil? || existing_token.empty?
+  block = <<~ENV
+
+    # --- SolarIQ MCP (added by bin/setup-mcp) ---
+    SOLAR_IQ_MCP_TOKEN=#{token}
+    SOLAR_IQ_MCP_ACTING_USER_EMAIL=#{email}
+  ENV
+  File.open(ENV_FILE, "a") { |f| f.write(block) }
+  puts "Appended MCP variables to #{ENV_FILE}"
+elsif (existing_email.nil? || existing_email.empty?) && !acting_email.empty?
+  File.open(ENV_FILE, "a") { |f| f.puts "SOLAR_IQ_MCP_ACTING_USER_EMAIL=#{acting_email}" }
+  puts "Appended SOLAR_IQ_MCP_ACTING_USER_EMAIL to #{ENV_FILE}"
+  email = acting_email
+else
+  puts "MCP token already present in #{ENV_FILE}; leaving it unchanged."
+  email = existing_email || acting_email
+end
+
+unless Dir.exist?(File.join(MCP_CWD, "node_modules"))
+  puts "Run: cd solar-iq-mcp-server && npm install && npm run build"
+end
+
+FileUtils.mkdir_p(CURSOR_DIR)
+File.write(
+  MCP_JSON,
+  JSON.pretty_generate(
+    "mcpServers" => {
+      "solar-iq" => {
+        "command" => "node",
+        "args" => [ "dist/index.js" ],
+        "cwd" => MCP_CWD,
+        "env" => {
+          "SOLAR_IQ_BASE_URL" => "http://localhost:3000",
+          "SOLAR_IQ_MCP_TOKEN" => token
+        }
+      }
+    }
+  )
+)
+puts "Wrote #{MCP_JSON}"
+puts <<~MSG
+
+  Next steps:
+  1. cd solar-iq-mcp-server && npm install && npm run build   (if you have not yet)
+  2. bin/rails db:seed   (so #{email.inspect} exists, or edit #{ENV_FILE})
+  3. Restart Cursor so it picks up MCP config
+  4. Enable the "solar-iq" MCP server under Cursor Settings → Tools & MCP
+  5. bin/rails server (dotenv-rails loads #{ENV_FILE} in development)
+MSG

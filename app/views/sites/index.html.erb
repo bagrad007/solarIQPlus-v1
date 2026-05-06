@@ -9,11 +9,10 @@
     No Sites visible.
   </div>
 <% else %>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+  <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-lg">
     <% @sites.each do |site| %>
-      <%= link_to site_path(site), class: "block bg-surface-container-lowest rounded-lg border border-outline-variant p-md hover:border-primary transition-colors" do %>
-        <h3 class="text-headline-md text-on-surface"><%= site.name %></h3>
-        <p class="text-label-sm text-on-surface-variant mt-xs">Polling every <%= site.polling_interval_seconds %>s</p>
+      <%= link_to site_path(site), class: "block h-full min-h-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-lg hover:border-primary transition-colors" do %>
+        <%= render "shared/card_title_and_status", title: site.name %>
       <% end %>
     <% end %>
   </div>

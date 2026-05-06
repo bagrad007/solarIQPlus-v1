@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "solar-iq": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "/ABSOLUTE/PATH/TO/solarIQPlus-v1/solar-iq-mcp-server",
+      "env": {
+        "SOLAR_IQ_BASE_URL": "http://localhost:3000",
+        "SOLAR_IQ_MCP_TOKEN": "REPLACE_WITH_SAME_SECRET_AS_RAILS"
+      }
+    }
+  }
+}

@@ -19,29 +19,27 @@
     No Sites yet. <%= link_to "Add a Site", new_site_path, class: "text-primary underline" unless Current.in_view_as? %>
   </div>
 <% else %>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+  <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-lg">
     <% @site_summaries.each do |s| %>
-      <%= link_to site_path(s[:site]), class: "block bg-surface-container-lowest rounded-lg border border-outline-variant p-md hover:border-primary transition-colors" do %>
-        <div class="flex items-center justify-between mb-md">
-          <h3 class="text-headline-md text-on-surface"><%= s[:site].name %></h3>
+      <%= link_to site_path(s[:site]), class: "block h-full min-h-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-lg hover:border-primary transition-colors" do %>
+        <%= render "shared/card_title_and_status", title: s[:site].name do %>
           <% latest = s[:latest] %>
           <% case latest&.alarm_state %>
           <% when "critical" %>
-            <span class="px-sm py-1 rounded-full bg-error-container text-on-error-container text-label-sm">critical</span>
+            <span class="inline-flex items-center whitespace-nowrap px-sm py-1 rounded-full bg-error-container text-on-error-container text-label-sm">critical</span>
           <% when "warn" %>
-            <span class="px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-sm">warn</span>
+            <span class="inline-flex items-center whitespace-nowrap px-sm py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-sm">warn</span>
           <% when "normal" %>
-            <span class="px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-label-sm">normal</span>
+            <span class="inline-flex items-center whitespace-nowrap px-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-label-sm">normal</span>
           <% else %>
-            <span class="px-sm py-1 rounded-full bg-surface-container-high text-on-surface-variant text-label-sm">no data</span>
+            <span class="inline-flex items-center whitespace-nowrap px-sm py-1 rounded-full bg-surface-container-high text-on-surface-variant text-label-sm">no data</span>
           <% end %>
-        </div>
-        <p class="text-label-sm text-on-surface-variant">
-          Polling every <%= s[:site].polling_interval_seconds %>s
-          <% if s[:latest] %>
-            • last reading <%= time_ago_in_words(s[:latest].recorded_at) %> ago
-          <% end %>
-        </p>
+        <% end %>
+        <% if s[:latest] %>
+          <p class="text-label-sm text-on-surface-variant">
+            Last reading <%= time_ago_in_words(s[:latest].recorded_at) %> ago
+          </p>
+        <% end %>
       <% end %>
     <% end %>
   </div>

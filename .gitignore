@@ -31,3 +31,6 @@
 !/app/assets/builds/.keep
 
 /node_modules
+
+# Local MCP config may contain secrets; copy from .cursor/mcp.json.example
+/.cursor/mcp.json

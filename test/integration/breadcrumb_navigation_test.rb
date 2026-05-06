@@ -46,6 +46,23 @@ class BreadcrumbNavigationTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "Maverick Cases and Audit Logs keep Partners link to dashboard" do
+    sign_in_as(@maverick_admin)
+    get cases_path
+    assert_response :success
+    assert_select '[data-testid="breadcrumb-trail"]' do
+      assert_select "a", text: "Partners", count: 1
+      assert_select "a[href=?]", dashboard_path, count: 1
+    end
+
+    get audit_logs_path
+    assert_response :success
+    assert_select '[data-testid="breadcrumb-trail"]' do
+      assert_select "a", text: "Partners", count: 1
+      assert_select "a[href=?]", dashboard_path, count: 1
+    end
+  end
+
   test "Maverick case show includes partner and customer crumbs" do
     sign_in_as(@maverick_admin)
     get case_path(@case_record)

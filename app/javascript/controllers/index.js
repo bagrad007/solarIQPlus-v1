@@ -9,3 +9,6 @@ application.register("hello", HelloController)
 
 import AiEnergyAnalystController from "./ai_energy_analyst_controller"
 application.register("ai-energy-analyst", AiEnergyAnalystController)
+
+import MobileAccountSheetController from "./mobile_account_sheet_controller"
+application.register("mobile-account-sheet", MobileAccountSheetController)

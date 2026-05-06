@@ -1,0 +1,23 @@
+---
+description: "Rails 8 + Hotwire (Stimulus/Turbo) + jsbundling and mixed client (React/JS) conventions—thin controllers, services/jobs, Active Record boundaries, and Python scripts without duplicating domain rules. Use when editing Ruby app code, routes, migrations, tests, app/javascript, or script/*.py."
+globs: app/**/*.rb, config/**/*.rb, db/**/*.rb, lib/**/*.rb, test/**/*.rb, Gemfile, Gemfile.lock, Rakefile, app/javascript/**/*, script/**/*.py
+alwaysApply: false
+---
+
+# Rails and mixed-stack conventions
+
+When editing matching files, follow **convention over configuration** and keep clear boundaries between Ruby, client JS/React, and Python.
+
+## Source of truth
+
+Read and apply the full checklist and sections in [.cursor/skills/rails-conventions-mixed-stacks/SKILL.md](.cursor/skills/rails-conventions-mixed-stacks/SKILL.md) for:
+
+- Thin controllers, RESTful routes, Active Record discipline, jobs vs services
+- Hotwire (Stimulus/Turbo) vs React integration and API/CSRF patterns
+- Python scripts or services: contracts and avoiding duplicated domain rules
+
+## Project stack (quick)
+
+This app uses Rails 8 with **Propshaft**, **jsbundling-rails**, **Stimulus**, and **Turbo** per `Gemfile`. Prefer those defaults before adding parallel patterns.
+
+If a change spans Ruby and `app/javascript`, keep business rules on the server unless the UI is explicitly the owner of that behavior.

@@ -3,6 +3,16 @@ Rails.application.routes.draw do
 
   get "up" => "rails/health#show", as: :rails_health_check
 
+  namespace :mcp, defaults: { format: :json } do
+    namespace :v1 do
+      resources :sites, only: [:index, :show] do
+        member do
+          get :diagnostics
+        end
+      end
+    end
+  end
+
   authenticate :user do
     root to: "dashboards#show"
 
@@ -10,8 +20,10 @@ Rails.application.routes.draw do
 
     resources :organizations, only: [:show], path: "orgs"
     resources :sites, only: [:index, :show, :new, :create, :edit, :update] do
+      resource :diagnostics, only: [:show], controller: "diagnostics"
       resources :cases, only: [:new, :create]
     end
+    get "diagnostics", to: "diagnostics#index", as: :diagnostics
     resources :cases, only: [:index, :show, :new, :create] do
       member do
         post :add_note

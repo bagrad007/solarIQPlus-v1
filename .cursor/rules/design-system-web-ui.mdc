@@ -1,0 +1,39 @@
+---
+description: "Web UI baseline (4px rhythm, type, buttons, dark surfaces, hierarchy) and coexistence with the frontend-design skill. For browser-facing views, CSS, and app/javascript—not CLI or headless code."
+globs: app/views/**/*, app/assets/stylesheets/**/*, app/javascript/**/*
+alwaysApply: false
+---
+
+# Design system (web UI only)
+
+**When this applies:** Only when the work clearly involves **browser-facing UI**: layouts, components, pages, HTML/templates (e.g. `.html.erb`, `.tsx`, `.jsx`), CSS/Tailwind/design tokens, or JS that directly drives visible UI (not headless tooling).
+
+**When to ignore this rule entirely:** CLI or TUI apps, shell scripts, daemons, workers, pure libraries, APIs or backends with **no** UI change, migrations, ops/config, tests that are not about UI, or any task where there is nothing to lay out or style for a user in a web client.
+
+If the project is not a web app or the change is not UI-related, **do not** use the spacing/typography/button/dark-mode guidance below.
+
+## Coexistence with `frontend-design` skill
+
+When also following the **frontend-design** skill (distinctive art direction, motion, composition): that skill sets **art direction** (fonts, palette, motion, composition, depth effects including dramatic shadows where appropriate). This rule still applies to **spacing rhythm** where it does not fight that direction, **button states** (`:hover`, `:active`, `:disabled`), **primary vs. secondary hierarchy**, and **accessibility baselines**.
+
+For **dark-mode elevation**, prefer **surface lightness** (layered background colors / tokens) in **product and app chrome** (dashboards, settings, dense tools). **Dramatic shadows** are allowed when the frontend-design aesthetic clearly calls for them (e.g. marketing or hero surfaces), not as the default for every panel or card.
+
+## Spacing
+
+- Use a 4px grid. All padding/margins must be multiples of 4.
+
+## Typography
+
+- Large headers must have letter-spacing: -0.02em and line-height: 1.1.
+
+## Buttons
+
+- Always include :hover, :active, and :disabled states.
+
+## Dark mode
+
+- Use background lightness (surface colors / tokens) for elevation in app chrome; avoid relying on box-shadow stacks for tiered surfaces unless the active aesthetic (e.g. frontend-design) intentionally uses them.
+
+## Hierarchy
+
+- Ensure primary actions are visually distinct from secondary ones.

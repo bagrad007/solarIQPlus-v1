@@ -28,28 +28,39 @@
     <% if user_signed_in? %>
       <%= render "shared/view_as_banner" %>
 
-      <div class="flex min-h-screen">
-        <%= render "shared/sidebar" %>
+      <%# The mobile-account-sheet Stimulus controller is mounted here so it %>
+      <%# owns both the top app bar's avatar trigger and the bottom-anchored %>
+      <%# sheet inside the bottom nav. Tap-outside detection in the controller %>
+      <%# uses `this.element.contains(target)`, so trigger and sheet must share %>
+      <%# a common controller root. %>
+      <div data-controller="mobile-account-sheet">
+        <%= render "shared/mobile_top_app_bar" %>
 
-        <main class="flex-1 ml-0 md:ml-64 p-margin pb-24 md:pb-margin">
-          <% if flash[:notice].present? %>
-            <div class="mb-md p-md rounded-md bg-primary-fixed text-on-primary-fixed-variant"><%= flash[:notice] %></div>
-          <% end %>
-          <% if flash[:alert].present? %>
-            <div class="mb-md p-md rounded-md bg-error-container text-on-error-container"><%= flash[:alert] %></div>
-          <% end %>
+        <div class="flex min-h-screen">
+          <%= render "shared/sidebar" %>
 
-          <%= render "shared/breadcrumb_trail" %>
+          <main class="min-w-0 max-w-full flex-1 ml-0 w-full md:ml-64 p-margin pb-24 md:pb-margin">
+            <% if flash[:notice].present? %>
+              <div class="mb-md p-md rounded-md bg-primary-fixed text-on-primary-fixed-variant"><%= flash[:notice] %></div>
+            <% end %>
+            <% if flash[:alert].present? %>
+              <div class="mb-md p-md rounded-md bg-error-container text-on-error-container"><%= flash[:alert] %></div>
+            <% end %>
 
+            <%= render "shared/breadcrumb_trail" %>
+
+            <%= yield %>
+          </main>
+        </div>
+
+        <%= render "shared/mobile_bottom_nav" %>
+      </div>
+    <% else %>
+      <div class="min-h-screen flex flex-col">
+        <main class="flex-1 flex items-center justify-center p-margin">
           <%= yield %>
         </main>
       </div>
-
-      <%= render "shared/mobile_bottom_nav" %>
-    <% else %>
-      <main class="min-h-screen flex items-center justify-center p-margin">
-        <%= yield %>
-      </main>
     <% end %>
   </body>
 </html>

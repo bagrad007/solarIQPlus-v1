@@ -1,0 +1,91 @@
+<%#
+  Site dashboard summary strip: system status, ambient/forecast (under status),
+  and asset lifetime. Two columns from md; first column stacks status + ambient.
+  Locals: summary (SiteOperationalSummary#to_h), forecast (SiteForecast#to_h).
+%>
+<%
+  forecast = local_assigns[:forecast] || {}
+  totals = summary[:totals] || {}
+  latest = summary[:latest] || {}
+  today  = summary[:today] || {}
+  alarm  = (latest[:alarm_state].presence || "").to_s.downcase
+  alarm_label = latest[:alarm_state].to_s.presence&.humanize || "No data"
+  last_at = today[:latest_at]
+%>
+<div class="grid w-full min-w-0 grid-cols-1 items-start gap-md md:grid-cols-2">
+  <div class="flex min-w-0 flex-col gap-md self-start">
+  <section class="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm md:flex md:flex-row md:items-center md:justify-between md:gap-lg"
+           aria-label="System status">
+    <div class="flex min-w-0 flex-col gap-xs">
+      <div class="flex items-center justify-between gap-sm">
+        <span class="text-label-sm font-semibold uppercase tracking-wider text-on-surface-variant">System status</span>
+        <% if alarm == "critical" %>
+          <span class="material-symbols-outlined text-error shrink-0 text-[22px]" style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24" aria-hidden="true">crisis_alert</span>
+        <% elsif alarm == "warn" %>
+          <span class="material-symbols-outlined text-secondary shrink-0 text-[22px]" style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24" aria-hidden="true">warning</span>
+        <% elsif alarm == "normal" %>
+          <span class="material-symbols-outlined text-primary shrink-0 text-[22px]" style="font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24" aria-hidden="true">verified</span>
+        <% else %>
+          <span class="material-symbols-outlined text-on-surface-variant shrink-0 text-[22px]" aria-hidden="true">monitor_heart</span>
+        <% end %>
+      </div>
+      <p class="font-[family-name:var(--font-display-serif)] text-headline-md text-on-surface tracking-tight leading-tight">
+        <%= alarm_label %>
+      </p>
+    </div>
+    <dl class="mt-sm grid gap-y-1 text-label-sm border-t border-outline-variant/60 pt-sm md:mt-0 md:w-auto md:shrink-0 md:border-t-0 md:border-l md:border-outline-variant/60 md:pl-md md:pt-0">
+      <div class="flex justify-between gap-sm md:flex-col md:items-end md:gap-y-1 md:text-end">
+        <dt class="text-on-surface-variant">Last reading</dt>
+        <dd class="font-medium text-on-surface md:font-semibold">
+          <%= last_at ? "#{time_ago_in_words(last_at)} ago" : "—" %>
+        </dd>
+      </div>
+      <div class="flex justify-between gap-sm md:flex-col md:items-end md:gap-y-1 md:text-end">
+        <dt class="text-on-surface-variant">Telemetry link</dt>
+        <dd class="font-medium <%= last_at ? "text-primary" : "text-on-surface-variant" %>">
+          <%= last_at ? "Stable" : "—" %>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <%= render "dashboard_ambient_panel",
+             environment: (summary[:environment] || {}),
+             forecast: forecast %>
+
+  </div>
+
+  <section class="min-w-0 self-start rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm"
+           aria-label="Asset lifetime generation">
+    <h2 class="text-label-sm font-semibold uppercase tracking-wider text-on-surface-variant mb-md">Asset lifetime</h2>
+    <div class="space-y-lg">
+      <div>
+        <span class="block text-label-sm text-on-surface-variant">Lifetime generation</span>
+        <div class="flex items-baseline gap-xs mt-xs">
+          <span class="font-[family-name:var(--font-display-serif)] text-headline-lg text-on-surface tracking-tight">
+            <%= number_with_delimiter(totals[:lifetime_kwh].to_f.round(1)) %>
+          </span>
+          <span class="text-label-md text-on-surface-variant font-medium">kWh</span>
+        </div>
+      </div>
+      <div class="pt-md border-t border-outline-variant/50">
+        <span class="block text-label-sm text-on-surface-variant">Generation this year</span>
+        <div class="flex items-baseline gap-xs mt-xs">
+          <span class="font-[family-name:var(--font-display-serif)] text-headline-lg text-on-surface tracking-tight">
+            <%= number_with_delimiter(totals[:ytd_kwh].to_f.round(1)) %>
+          </span>
+          <span class="text-label-md text-on-surface-variant font-medium">kWh</span>
+        </div>
+      </div>
+      <div class="pt-md border-t border-outline-variant/50">
+        <span class="block text-label-sm text-on-surface-variant">Solar gen this month</span>
+        <div class="flex items-baseline gap-xs mt-xs">
+          <span class="font-[family-name:var(--font-display-serif)] text-headline-lg text-solar-accent tracking-tight">
+            <%= number_with_delimiter(totals[:mtd_kwh].to_f.round(1)) %>
+          </span>
+          <span class="text-label-md text-on-surface-variant font-medium">kWh</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

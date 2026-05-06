@@ -19,7 +19,7 @@
 <svg viewBox="0 0 <%= width %> <%= height %>" preserveAspectRatio="none" class="w-full h-20">
   <% if values.any? %>
     <polyline points="<%= points %>" fill="none" stroke="var(--color-primary)" stroke-width="2"/>
-    <polygon points="0,<%= height %> <%= points %> <%= width %>,<%= height %>" fill="var(--color-primary-fixed)" opacity="0.4"/>
+    <polygon points="0,<%= height %> <%= points %> <%= width %>,<%= height %>" fill="var(--color-solar-accent)" opacity="0.25"/>
   <% else %>
     <line x1="0" y1="<%= height / 2 %>" x2="<%= width %>" y2="<%= height / 2 %>" stroke="var(--color-outline-variant)" stroke-dasharray="4 4"/>
   <% end %>

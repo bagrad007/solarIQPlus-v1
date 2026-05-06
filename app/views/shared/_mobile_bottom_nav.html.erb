@@ -1,14 +1,44 @@
-<% if mobile_nav_visible? %>
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-low border-t border-outline-variant z-40">
-    <ul class="flex">
-      <% mobile_nav_items.each do |item| %>
-        <li class="flex-1">
-          <%= link_to item[:path], class: "flex flex-col items-center justify-center gap-1 py-sm text-label-sm #{current_page?(item[:path]) ? 'text-primary' : 'text-on-surface-variant'}" do %>
-            <span class="material-symbols-outlined"><%= item[:icon] %></span>
-            <span><%= item[:label] %></span>
-          <% end %>
-        </li>
-      <% end %>
-    </ul>
-  </nav>
-<% end %>
+<%# Pure navigation surface on phones. The avatar trigger that used to %>
+<%# live in this nav has moved to _mobile_top_app_bar; the floating account %>
+<%# sheet stays anchored above the bottom nav. The Stimulus controller %>
+<%# wrapper that links trigger ↔ sheet is mounted in application.html.erb. %>
+<nav data-testid="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-low border-t border-outline-variant z-40">
+  <ul class="flex">
+    <% nav_items.each do |item| %>
+      <li class="flex-1">
+        <%= link_to item[:path], class: "flex flex-col items-center justify-center gap-1 py-sm text-label-sm #{current_page?(item[:path]) ? 'text-primary' : 'text-on-surface-variant'}" do %>
+          <span class="material-symbols-outlined"><%= item[:icon] %></span>
+          <span><%= item[:label] %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</nav>
+
+<div id="mobile-account-sheet"
+     data-testid="mobile-account-sheet"
+     data-mobile-account-sheet-target="sheet"
+     role="dialog"
+     aria-modal="false"
+     aria-label="Account"
+     hidden
+     class="md:hidden fixed bottom-[60px] left-0 right-0 z-40 bg-surface-container-high border-t border-outline-variant">
+  <div class="flex items-center gap-sm px-margin py-md">
+    <div aria-hidden="true"
+         class="h-8 w-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-semibold">
+      <%= nav_account_scope_initial %>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="break-words text-label-md font-medium leading-snug text-on-surface"><%= nav_account_scope_name %></div>
+    </div>
+  </div>
+  <div class="px-margin pb-md">
+    <%= button_to destroy_user_session_path,
+                  method: :delete,
+                  class: "w-full flex items-center gap-sm px-md py-sm rounded-md text-label-md text-on-surface-variant hover:bg-surface-container",
+                  form: { class: "block" } do %>
+      <span class="material-symbols-outlined">logout</span>
+      <span>Sign out</span>
+    <% end %>
+  </div>
+</div>

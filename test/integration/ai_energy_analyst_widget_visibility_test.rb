@@ -15,6 +15,13 @@ class AiEnergyAnalystWidgetVisibilityTest < ActionDispatch::IntegrationTest
     assert_includes response.body, WIDGET_MARKER
   end
 
+  test "widget renders on a customer's site diagnostics page" do
+    sign_in_as(@northwind_user)
+    get site_diagnostics_path(@site_a)
+    assert_response :success
+    assert_includes response.body, WIDGET_MARKER
+  end
+
   test "widget is hidden on the Maverick partners roll-up dashboard" do
     sign_in_as(@maverick_admin)
     get dashboard_path
@@ -25,6 +32,13 @@ class AiEnergyAnalystWidgetVisibilityTest < ActionDispatch::IntegrationTest
   test "widget is hidden on the Partner customers roll-up dashboard" do
     sign_in_as(@acme_user)
     get dashboard_path
+    assert_response :success
+    assert_not_includes response.body, WIDGET_MARKER
+  end
+
+  test "widget is hidden on diagnostics site picker (roll-up)" do
+    sign_in_as(@maverick_admin)
+    get diagnostics_path
     assert_response :success
     assert_not_includes response.body, WIDGET_MARKER
   end

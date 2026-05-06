@@ -1,0 +1,11 @@
+<%# locals: title (String). Optional block: status pill(s) — use inline-flex + whitespace-nowrap on pills. %>
+<div class="mb-md flex items-start gap-sm">
+  <h3 class="text-headline-md text-on-surface min-h-16 min-w-0 line-clamp-2 break-words <%= block_given? ? "flex-1" : "w-full" %>">
+    <%= title %>
+  </h3>
+  <% if block_given? %>
+    <div class="shrink-0 pt-0.5">
+      <%= yield %>
+    </div>
+  <% end %>
+</div>

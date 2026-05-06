@@ -1,0 +1,57 @@
+<% provide(:title, "#{@site.name} — Diagnostics") %>
+
+<% content_for :head do %>
+  <%= javascript_include_tag "diagnostics", "data-turbo-track": "reload", type: "module", defer: true %>
+<% end %>
+
+<%= render "shared/page_header",
+           title: "Diagnostics",
+           subtitle: @site.name,
+           actions: nil %>
+
+<div class="mb-margin flex w-full min-w-0 max-w-full flex-col gap-lg">
+  <div class="block w-full min-h-0 min-w-0"
+       data-diagnostics-mount
+       data-payload="<%= @diagnostics_payload.to_json %>">
+    <noscript>
+      <p class="text-label-md text-on-surface-variant italic">
+        Diagnostics requires JavaScript. Re-enable scripting to see the import/export and 7-day generation charts.
+      </p>
+    </noscript>
+  </div>
+
+  <%# Forecast + open cases — same ERB pattern as the operational dashboard / Stitch mock footer row %>
+  <section class="grid w-full min-w-0 grid-cols-1 gap-md sm:grid-cols-2"
+           aria-label="Forecast solar production">
+    <%= render "sites/forecast_tile",
+               label:         "Forecast Solar Production Today",
+               projected_kwh: @forecast[:today_kwh],
+               condition:     @forecast[:today_condition],
+               high_f:        @forecast[:today_temp_high_f] %>
+    <%= render "sites/forecast_tile",
+               label:         "Forecast Solar Production Tomorrow",
+               projected_kwh: @forecast[:tomorrow_kwh],
+               condition:     @forecast[:tomorrow_condition],
+               high_f:        @forecast[:tomorrow_temp_high_f] %>
+  </section>
+
+  <div class="rounded-xl border border-outline-variant bg-surface-container-lowest p-md shadow-sm w-full min-w-0">
+    <div class="flex flex-wrap items-center justify-between gap-sm mb-sm">
+      <h2 class="text-headline-md font-[family-name:var(--font-display-serif)] text-on-surface tracking-tight">Open cases on this site</h2>
+    </div>
+    <% if @open_cases.empty? %>
+      <p class="text-label-md text-on-surface-variant">No open cases on this site.</p>
+    <% else %>
+      <ul class="divide-y divide-outline-variant">
+        <% @open_cases.each do |c| %>
+          <li class="py-sm">
+            <%= link_to c.subject, case_path(c), class: "text-label-md text-primary hover:underline" %>
+            <span class="text-label-sm text-on-surface-variant ml-sm">[<%= c.status %>]</span>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>
+
+<%= render "shared/ai_energy_analyst_widget", context_label: customer_scope_label if customer_scope_present? %>

@@ -1,0 +1,23 @@
+<% provide(:title, "Diagnostics — Pick a Site") %>
+
+<%= render "shared/page_header",
+           title: "Diagnostics",
+           subtitle: "Pick a Site to view its inverter and grid diagnostics.",
+           actions: nil %>
+
+<% if @sites.empty? %>
+  <div class="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
+    No Sites in scope yet.
+  </div>
+<% else %>
+  <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-lg">
+    <% @sites.each do |site| %>
+      <%= link_to site_diagnostics_path(site),
+                  class: "block h-full min-h-0 bg-surface-container-lowest rounded-lg border border-outline-variant p-lg hover:border-primary transition-colors" do %>
+        <%= render "shared/card_title_and_status", title: site.name do %>
+          <span class="material-symbols-outlined shrink-0 text-on-surface-variant" aria-hidden="true">monitoring</span>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

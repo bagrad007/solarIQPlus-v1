@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fraunces:ital,opsz,wght@0,9..144,200..900;1,9..144,200..900&display=swap");
+
 @import "tailwindcss";
 
 /*
@@ -26,6 +28,14 @@
   --color-secondary-fixed-dim: #ffb786;
   --color-on-secondary-fixed: #311300;
   --color-on-secondary-fixed-variant: #723600;
+
+  /*
+    Brand accent: the orange of the Maverick Dynamics logo. Reserved for
+    *solar-domain* highlights only — chart area-fills, weather/sun iconography,
+    and the wordmark accent stripe — never for primary actions or buttons.
+    Keep usage restrained; navy (--color-primary) remains the dominant chrome.
+  */
+  --color-solar-accent: #F08529;
 
   --color-tertiary: #002241;
   --color-on-tertiary: #ffffff;
@@ -81,16 +91,17 @@
   --radius-3xl: 0.75rem;
   --radius-full: 9999px; /* Keep Tailwind default for true circles (avatars, status dots) */
 
-  /* Type scale: every named role maps to Inter at a specific weight/size */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display-lg: "Inter", sans-serif;
-  --font-headline-lg: "Inter", sans-serif;
-  --font-headline-md: "Inter", sans-serif;
-  --font-body-lg: "Inter", sans-serif;
-  --font-body-md: "Inter", sans-serif;
-  --font-label-md: "Inter", sans-serif;
-  --font-label-sm: "Inter", sans-serif;
-  --font-data-mono: "Inter", sans-serif;
+  /* DM Sans body + Fraunces display (distinctive pairing; solar telemetry UI) */
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-display-lg: "Fraunces", var(--font-display-serif);
+  --font-headline-lg: "Fraunces", var(--font-display-serif);
+  --font-headline-md: "Fraunces", var(--font-display-serif);
+  --font-body-lg: "DM Sans", var(--font-sans);
+  --font-body-md: "DM Sans", var(--font-sans);
+  --font-label-md: "DM Sans", var(--font-sans);
+  --font-label-sm: "DM Sans", var(--font-sans);
+  --font-data-mono: ui-monospace, "Cascadia Code", monospace;
 
   --text-display-lg: 48px;
   --text-display-lg--line-height: 56px;
@@ -136,3 +147,111 @@
 /* Hide scrollbars on horizontal-scroll rails (utility from source HTML) */
 .scrolling-hide::-webkit-scrollbar { display: none; }
 .scrolling-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/*
+  Recharts focus suppression. Recharts adds tabindex=0 to multiple layers
+  (the .recharts-wrapper <div>, the .recharts-surface <svg>, individual
+  sectors/bars/curves) so they're keyboard-navigable. The default browser
+  focus indicator picks up the OS accent color (often orange on macOS)
+  and clashes with our M3 palette.
+  We belt-and-suspenders this:
+    1) `outline: none` covers Chromium/Firefox.
+    2) `box-shadow: none` covers focus rings rendered via shadow.
+    3) `-webkit-tap-highlight-color: transparent` covers iOS Safari taps.
+  A companion JS hook in app/javascript/application.js also removes
+  `tabindex` from these nodes so the focus state never even fires.
+*/
+[class*="recharts-"],
+[class*="recharts-"]:focus,
+[class*="recharts-"]:focus-visible,
+[class*="recharts-"]:focus-within,
+[class*="recharts-"] *:focus,
+[class*="recharts-"] *:focus-visible {
+  outline: none !important;
+  outline-style: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Sidebar: brand accent — thin, viewport-aware width + slow drift (reduced-motion: static) */
+.sidebar-brand-accent-stripe {
+  --stripe-h: clamp(1.5px, 0.1vw + 1.35px, 2px);
+  height: var(--stripe-h);
+  width: min(11.5rem, calc(100% - 0.25rem));
+  margin-inline: auto;
+  border-radius: 9999px;
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-solar-accent) 0%, transparent) 0%,
+    color-mix(in srgb, var(--color-solar-accent) 45%, transparent) 28%,
+    var(--color-solar-accent) 50%,
+    color-mix(in srgb, var(--color-solar-accent) 45%, transparent) 72%,
+    color-mix(in srgb, var(--color-solar-accent) 0%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position: 0% 50%;
+  box-shadow:
+    0 0 clamp(6px, 0.9vw, 12px) color-mix(in srgb, var(--color-solar-accent) 32%, transparent),
+    0 1px 0 color-mix(in srgb, white 28%, transparent) inset;
+  transition: width 0.4s ease, height 0.4s ease, box-shadow 0.4s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sidebar-brand-accent-stripe {
+    animation: sidebar-accent-drift 12s ease-in-out infinite;
+  }
+}
+
+@keyframes sidebar-accent-drift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    filter: brightness(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: brightness(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-brand-accent-stripe {
+    animation: none;
+    background-position: 50% 50%;
+  }
+}
+
+/* Active nav: solar accent spine + filled icon (Material Symbols) */
+.sidebar-nav-link--active .material-symbols-outlined {
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
+}
+
+/* Staggered reveal for dashboard / diagnostics React islands */
+@keyframes dashboard-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-reveal > * {
+  animation: dashboard-reveal 0.55s ease-out both;
+}
+.dashboard-reveal > *:nth-child(1) { animation-delay: 0.04s; }
+.dashboard-reveal > *:nth-child(2) { animation-delay: 0.1s; }
+.dashboard-reveal > *:nth-child(3) { animation-delay: 0.16s; }
+.dashboard-reveal > *:nth-child(4) { animation-delay: 0.22s; }
+.dashboard-reveal > *:nth-child(5) { animation-delay: 0.28s; }
+.dashboard-reveal > *:nth-child(6) { animation-delay: 0.34s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-reveal > * {
+    animation: none;
+  }
+}

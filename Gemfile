@@ -37,6 +37,9 @@ gem "kamal", require: false
 gem "thruster", require: false
 
 group :development, :test do
+  # Loads .env* so SOLAR_IQ_MCP_* from bin/setup-mcp apply without manual export.
+  gem "dotenv-rails"
+
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
