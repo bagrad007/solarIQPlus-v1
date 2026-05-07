@@ -83,15 +83,18 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
-# Production uses DATABASE_URL only (Railway). `ENV.fetch` runs only when
-# RAILS_ENV is production so development can boot without DATABASE_URL set.
-# Propshaft `assets:precompile` loads the full app in production — supply DATABASE_URL
-# at build time (Dockerfile inline env, or Railway Variables for Nixpacks).
-<% production_database_url = (ENV["RAILS_ENV"] == "production") ? ENV.fetch("DATABASE_URL") : ENV["DATABASE_URL"] %>
+# Production uses DATABASE_URL only (Railway). Do not use ENV.fetch here: Rake loads
+# this file before the full environment (see load_database_yaml), and any uncaught
+# error in ERB aborts all tasks. Use ~ (YAML null) when unset; link DATABASE_URL on the app service.
+<% production_database_url = ENV["DATABASE_URL"] %>
 production:
   primary: &primary_production
     <<: *default
-    url: <%= production_database_url %>
+<% if production_database_url %>
+    url: <%= production_database_url.inspect %>
+<% else %>
+    url: ~
+<% end %>
   cache:
     <<: *primary_production
     migrations_paths: db/cache_migrate
