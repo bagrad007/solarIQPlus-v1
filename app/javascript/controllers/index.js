@@ -4,17 +4,20 @@
 
 import { application } from "./application"
 
-import HelloController from "./hello_controller"
-application.register("hello", HelloController)
-
 import AiEnergyAnalystController from "./ai_energy_analyst_controller"
 application.register("ai-energy-analyst", AiEnergyAnalystController)
 
-import MobileAccountSheetController from "./mobile_account_sheet_controller"
-application.register("mobile-account-sheet", MobileAccountSheetController)
-
 import AlarmsSearchController from "./alarms_search_controller"
 application.register("alarms-search", AlarmsSearchController)
+
+import HelloController from "./hello_controller"
+application.register("hello", HelloController)
+
+import LoginFormController from "./login_form_controller"
+application.register("login-form", LoginFormController)
+
+import MobileAccountSheetController from "./mobile_account_sheet_controller"
+application.register("mobile-account-sheet", MobileAccountSheetController)
 
 import ReportDraftFromPromptController from "./report_draft_from_prompt_controller"
 application.register("report-draft-from-prompt", ReportDraftFromPromptController)

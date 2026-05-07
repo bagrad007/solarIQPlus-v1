@@ -11,7 +11,10 @@
       <p class="mt-sm text-body-md text-on-surface-variant">Sign in to continue.</p>
     </div>
 
-    <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-md" }) do |f| %>
+    <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: {
+          class: "space-y-md",
+          data: { controller: "login-form", action: "keydown->login-form#maybeSubmit" }
+        }) do |f| %>
       <% if flash[:alert].present? %>
         <div class="p-md rounded-sm bg-error-container text-on-error-container text-body-md">
           <%= flash[:alert] %>
