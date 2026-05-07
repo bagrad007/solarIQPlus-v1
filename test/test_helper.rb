@@ -2,6 +2,8 @@ ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
 
+ActiveJob::Base.queue_adapter = :test
+
 # Rails dumps structure.sql with `pg_dump -x`, which strips privileges. The
 # GRANTs from migration #2 therefore aren't in db/structure.sql, so the test DB
 # (loaded from that dump by db:test:prepare) starts with the right schema but

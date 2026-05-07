@@ -1,0 +1,86 @@
+<% provide(:title, "Reports") %>
+
+<%= render "shared/page_header",
+           title: "Reports",
+           subtitle: "Describe what you need, edit the draft the AI shapes for recipients, then schedule delivery.",
+           actions: nil %>
+
+<div class="space-y-lg max-w-6xl xl:max-w-none mx-auto xl:mx-0">
+  <section class="reports-cockpit-shell">
+    <div class="rounded-lg border border-outline-variant bg-surface-container-low px-lg py-md">
+      <h2 class="text-headline-md text-on-background tracking-tight" style="letter-spacing: -0.02em; line-height: 1.1">Smart builder</h2>
+      <p class="text-body-md text-on-surface-variant mt-xs mb-md">Left: intent and routing. Right: the message body — yours to rewrite line-by-line.</p>
+      <%= render "form", scheduled_report: @scheduled_report %>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-outline-variant bg-surface-container-low overflow-hidden reports-cockpit-shell reports-cockpit-shell--delayed" style="animation-delay: 90ms">
+    <div class="border-b border-outline-variant px-lg py-md flex items-center justify-between gap-sm flex-wrap">
+      <h2 class="text-headline-md text-on-background tracking-tight" style="letter-spacing: -0.02em; line-height: 1.1">Scheduled reports</h2>
+      <span class="text-label-sm text-on-surface-variant tabular-nums"><%= @scheduled_reports.size %> in view</span>
+    </div>
+    <% if @scheduled_reports.empty? %>
+      <p class="px-lg py-xl text-body-md text-on-surface-variant text-center" data-testid="active-reports-empty">No scheduled reports yet.</p>
+    <% else %>
+      <div class="overflow-x-auto" data-testid="active-reports">
+        <table class="min-w-full text-left text-label-md">
+          <thead>
+            <tr class="reports-active-reports-legend bg-surface-container-highest/60 text-on-surface-variant">
+              <th colspan="6" scope="colgroup" class="px-md py-sm text-left font-normal normal-case">
+                <span class="inline-flex flex-wrap items-center gap-x-md gap-y-xs text-label-sm">
+                  <span class="inline-flex items-center gap-xs">
+                    <span class="h-2 w-2 rounded-full bg-[color:var(--color-solar-accent)] shadow-[0_0_8px_rgba(240,133,41,0.55)]" aria-hidden="true"></span>
+                    <span><strong class="text-on-surface font-medium">Active</strong> = schedule on, sends on cadence</span>
+                  </span>
+                  <span class="text-outline-variant" aria-hidden="true">|</span>
+                  <span><strong class="text-on-surface font-medium">Paused</strong> = saved but not sending until turned back on</span>
+                </span>
+              </th>
+            </tr>
+            <tr class="bg-surface-container-highest/80 text-on-surface-variant uppercase tracking-wide text-[11px]">
+              <th class="px-md py-sm font-medium">Status</th>
+              <th class="px-md py-sm font-medium">Name</th>
+              <th class="px-md py-sm font-medium">Recipients</th>
+              <th class="px-md py-sm font-medium">AI prompt</th>
+              <th class="px-md py-sm font-medium">Next run</th>
+              <th class="px-md py-sm font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant text-on-surface">
+            <% @scheduled_reports.each do |r| %>
+              <tr class="hover:bg-surface-container-lowest/80 <%= "reports-row--active" if r.enabled? %>"
+                  data-testid="active-report-row">
+                <td class="px-md py-sm whitespace-nowrap">
+                  <span class="inline-flex items-center rounded-full px-sm py-0.5 text-label-sm font-medium <%= r.enabled? ? "bg-primary-fixed-dim text-on-primary-fixed" : "bg-surface-container-highest text-on-surface-variant" %>">
+                    <%= r.schedule_status_label %>
+                  </span>
+                </td>
+                <td class="px-md py-sm font-medium"><%= r.name %></td>
+                <td class="px-md py-sm text-on-surface-variant max-w-[160px] truncate" title="<%= r.recipients.join(', ') %>"><%= r.recipients.join(", ") %></td>
+                <td class="px-md py-sm text-on-surface-variant max-w-[200px]">
+                  <span class="line-clamp-2" data-testid="report-ai-prompt-snippet"><%= r.ai_prompt %></span>
+                </td>
+                <td class="px-md py-sm text-on-surface-variant whitespace-nowrap tabular-nums text-[13px]">
+                  <% if r.enabled? && r.next_run_at.present? %>
+                    <%= r.next_run_at.in_time_zone(r.time_zone.presence || "UTC").strftime("%b %-d, %H:%M %Z") %>
+                  <% else %>
+                    <span class="text-on-surface-variant">—</span>
+                  <% end %>
+                </td>
+                <td class="px-md py-sm text-right whitespace-nowrap">
+                  <div class="inline-flex flex-wrap items-center justify-end gap-sm">
+                    <%= button_to "Run now",
+                                  dispatch_report_path(r),
+                                  method: :post,
+                                  class: "inline-flex items-center rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-1.5 text-label-sm font-medium text-primary hover:bg-surface-container transition active:opacity-90" %>
+                    <%= link_to "Edit", edit_report_path(r), class: "text-label-sm font-medium text-primary hover:underline" %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  </section>
+</div>

@@ -43,6 +43,15 @@ Rails.application.routes.draw do
 
     resources :audit_logs, only: [:index]
 
+    post "reports/draft_body", to: "reports#draft_body", as: :reports_draft_body
+
+    resources :reports, only: %i[index create edit update] do
+      member do
+        # Action cannot be named `dispatch` — conflicts with ActionController internals.
+        post "dispatch", action: :enqueue_delivery
+      end
+    end
+
     namespace :admin do
       resource :view_as, only: [:create, :destroy], controller: "view_as"
     end

@@ -1,0 +1,115 @@
+<%# locals: scheduled_report %>
+
+<%= form_with model: scheduled_report,
+              url: (scheduled_report.persisted? ? report_path(scheduled_report) : reports_path),
+              class: "space-y-0",
+              data: {
+                controller: "report-draft-from-prompt",
+                report_draft_from_prompt_url_value: reports_draft_body_path,
+                report_draft_from_prompt_example_brief_value: ScheduledReport::DEMO_EXAMPLE_AI_PROMPT
+              } do |f| %>
+  <% if scheduled_report.errors.any? %>
+    <div class="rounded-lg border border-error-container bg-error-container/30 px-md py-sm text-body-md text-on-error-container mb-md"
+         role="alert"
+         data-testid="scheduled-report-errors">
+      <ul class="list-disc pl-md space-y-xs">
+        <% scheduled_report.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-x-lg gap-y-md">
+    <div class="xl:col-span-5 space-y-md">
+      <div>
+        <%= f.label :name, "Report name", class: "block text-label-md font-medium text-on-surface mb-xs" %>
+        <%= f.text_field :name,
+                         class: "w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                         autocomplete: "off",
+                         required: true %>
+      </div>
+
+      <div>
+        <%= f.label :recipients_line, "Recipients (emails)", class: "block text-label-md font-medium text-on-surface mb-xs" %>
+        <%= f.text_area :recipients_line,
+                        rows: 3,
+                        placeholder: "ops@customer.com, analyst@partner.com",
+                        class: "w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-[13px]" %>
+        <p class="mt-xs text-label-sm text-on-surface-variant">Separate with commas, semicolons, or new lines.</p>
+      </div>
+
+      <div>
+        <div class="flex flex-wrap items-end justify-between gap-sm gap-y-xs mb-xs">
+          <%= f.label :ai_prompt, "AI assistant — what should this report cover?", class: "block text-label-md font-medium text-on-surface" %>
+          <button type="button"
+                  class="shrink-0 text-label-sm font-medium text-primary hover:underline"
+                  data-action="report-draft-from-prompt#loadExample">
+            Use example brief
+          </button>
+        </div>
+        <%= f.text_area :ai_prompt,
+                        rows: 6,
+                        placeholder: "Describe metrics, comparisons, sites, and tone. Then use Generate draft on the right.",
+                        data: { report_draft_from_prompt_target: "brief" },
+                        class: "w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" %>
+        <p class="mt-xs text-label-sm text-on-surface-variant">
+          New reports load with a <strong class="font-medium text-on-surface">sample brief</strong> you can edit.
+          Click <strong class="font-medium text-on-surface">Generate draft from brief</strong> on the right to see how the template turns this into recipient-ready copy (demo — not a live model).
+        </p>
+      </div>
+    </div>
+
+    <div class="xl:col-span-7 flex flex-col gap-xs min-h-[280px]">
+      <div class="flex flex-wrap items-end justify-between gap-sm gap-y-xs">
+        <%= f.label :report_content_preview, "Report body (what recipients read)", class: "block text-label-md font-medium text-on-surface" %>
+        <button type="button"
+                class="shrink-0 inline-flex items-center justify-center rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-label-sm font-medium text-primary shadow-sm transition hover:bg-surface-container active:opacity-90"
+                data-action="report-draft-from-prompt#generate">
+          Generate draft from brief
+        </button>
+      </div>
+      <p data-report-draft-from-prompt-target="status"
+         class="text-label-sm text-on-surface-variant min-h-[1.25rem]"
+         aria-live="polite"></p>
+      <%= f.text_area :report_content_preview,
+                      rows: 18,
+                      data: { testid: "report-content-preview", report_draft_from_prompt_target: "body" },
+                      class: "min-h-[280px] flex-1 w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed",
+                      placeholder: "Leave blank on create to auto-draft from your AI prompt — then edit freely. Use the button above to rebuild from the latest brief (demo — no external AI)." %>
+      <p class="text-label-sm text-on-surface-variant">Editable delivery copy. Button runs a template on the server (same as first save) — not a live LLM.</p>
+    </div>
+
+    <div class="xl:col-span-12 border-t border-outline-variant/80 pt-md grid grid-cols-1 sm:grid-cols-3 gap-md">
+      <div>
+        <%= f.label :frequency, class: "block text-label-md font-medium text-on-surface mb-xs" %>
+        <%= f.select :frequency,
+                     ScheduledReport::FREQUENCIES.map { |x| [x.titleize, x] },
+                     {},
+                     class: "w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" %>
+      </div>
+      <div>
+        <%= f.label :hour, "Hour (local)", class: "block text-label-md font-medium text-on-surface mb-xs" %>
+        <%= f.number_field :hour,
+                           min: 0,
+                           max: 23,
+                           class: "w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" %>
+      </div>
+      <div>
+        <%= f.label :time_zone, class: "block text-label-md font-medium text-on-surface mb-xs" %>
+        <%= f.text_field :time_zone,
+                         class: "w-full rounded-md border border-outline-variant bg-surface-container-lowest px-md py-sm text-body-md text-on-surface shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                         placeholder: "UTC" %>
+      </div>
+    </div>
+
+    <div class="xl:col-span-12 flex flex-wrap items-center justify-between gap-md pt-sm">
+      <div class="flex items-center gap-sm">
+        <%= f.check_box :enabled, class: "h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary/30" %>
+        <%= f.label :enabled, "Schedule active (recipients get sends on cadence)", class: "text-label-md text-on-surface" %>
+      </div>
+      <%= f.submit scheduled_report.new_record? ? "Create report" : "Save changes",
+                   class: "inline-flex items-center justify-center rounded-md bg-primary px-lg py-sm text-label-md font-medium text-on-primary shadow-sm transition hover:opacity-95 active:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" %>
+    </div>
+  </div>
+<% end %>

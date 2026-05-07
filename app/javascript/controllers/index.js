@@ -15,3 +15,6 @@ application.register("mobile-account-sheet", MobileAccountSheetController)
 
 import AlarmsSearchController from "./alarms_search_controller"
 application.register("alarms-search", AlarmsSearchController)
+
+import ReportDraftFromPromptController from "./report_draft_from_prompt_controller"
+application.register("report-draft-from-prompt", ReportDraftFromPromptController)

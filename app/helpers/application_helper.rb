@@ -7,6 +7,7 @@ module ApplicationHelper
       [
         { label: "Dashboard",   path: dashboard_path,   icon: "dashboard" },
         { label: "Diagnostics", path: diagnostics_path, icon: "monitoring" },
+        { label: "Reports",     path: reports_path,     icon: "assessment" },
         { label: "Alarms",      path: alarms_path,      icon: "notifications_active" },
         { label: "Cases",       path: cases_path,       icon: "support_agent" },
         { label: "Audit Logs",  path: audit_logs_path,  icon: "fact_check" }
@@ -15,6 +16,7 @@ module ApplicationHelper
       [
         { label: "Dashboard",        path: dashboard_path,         icon: "dashboard" },
         { label: "Diagnostics",      path: diagnostics_path,       icon: "monitoring" },
+        { label: "Reports",          path: reports_path,           icon: "assessment" },
         { label: "Customer Manager", path: customer_manager_path,  icon: "groups" },
         { label: "Alarms",           path: alarms_path,            icon: "notifications_active" },
         { label: "Cases",            path: cases_path,             icon: "support_agent" }
@@ -23,6 +25,7 @@ module ApplicationHelper
       [
         { label: "Dashboard",   path: dashboard_path,   icon: "dashboard" },
         { label: "Diagnostics", path: diagnostics_path, icon: "monitoring" },
+        { label: "Reports",     path: reports_path,     icon: "assessment" },
         { label: "Alarms",      path: alarms_path,      icon: "notifications_active" },
         { label: "Cases",       path: cases_path,       icon: "support_agent" }
       ]

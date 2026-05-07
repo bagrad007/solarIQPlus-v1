@@ -1,0 +1,12 @@
+<% provide(:title, "Edit report") %>
+
+<%= render "shared/page_header",
+           title: "Edit scheduled report",
+           subtitle: "Adjust recipients, cadence, AI brief, or the report body — saves re-queue the next run when active.",
+           actions: link_to("Back to reports", reports_path, class: "text-label-md font-medium text-primary hover:underline") %>
+
+<div class="max-w-6xl reports-cockpit-shell">
+  <div class="rounded-lg border border-outline-variant bg-surface-container-low px-lg py-md">
+    <%= render "form", scheduled_report: @scheduled_report %>
+  </div>
+</div>

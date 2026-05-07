@@ -785,3 +785,37 @@ select#site_id.alarms-select-plain {
   .alarm-action-btn__label--full  { display: inline; }
 }
 
+/* Reports — telemetry preview panel (uses @theme solar-accent for inset edge). */
+.report-preview-cockpit {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-outline-variant);
+  background: color-mix(in srgb, var(--color-surface-container-lowest) 94%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-solar-accent) 18%, transparent),
+    0 12px 40px -18px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+.reports-cockpit-shell {
+  animation: reports-cockpit-reveal 420ms ease-out both;
+}
+@keyframes reports-cockpit-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.reports-cockpit-shell--delayed {
+  animation-delay: 90ms;
+}
+
+.reports-active-reports-legend {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-outline-variant) 85%, transparent);
+}
+
+.reports-row--active {
+  box-shadow: inset 3px 0 0 0 var(--color-solar-accent);
+}
+

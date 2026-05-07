@@ -701,6 +701,33 @@ ALTER TABLE ONLY public.organizations FORCE ROW LEVEL SECURITY;
 
 
 --
+-- Name: scheduled_reports; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.scheduled_reports (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    org_path public.ltree NOT NULL,
+    name text NOT NULL,
+    recipients text[] DEFAULT '{}'::text[] NOT NULL,
+    ai_prompt text DEFAULT ''::text NOT NULL,
+    frequency text DEFAULT 'daily'::text NOT NULL,
+    hour integer DEFAULT 8 NOT NULL,
+    time_zone text DEFAULT 'UTC'::text NOT NULL,
+    next_run_at timestamp with time zone,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    report_content_preview text DEFAULT ''::text NOT NULL,
+    CONSTRAINT scheduled_reports_frequency_valid CHECK ((frequency = ANY (ARRAY['daily'::text, 'weekly'::text, 'monthly'::text]))),
+    CONSTRAINT scheduled_reports_hour_range CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT scheduled_reports_name_not_blank CHECK ((length(btrim(name)) > 0))
+);
+
+ALTER TABLE ONLY public.scheduled_reports FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -981,6 +1008,14 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: scheduled_reports scheduled_reports_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduled_reports
+    ADD CONSTRAINT scheduled_reports_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1200,6 +1235,27 @@ CREATE INDEX index_organizations_on_parent_id ON public.organizations USING btre
 --
 
 CREATE INDEX index_organizations_on_path ON public.organizations USING gist (path);
+
+
+--
+-- Name: index_scheduled_reports_on_next_run_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_scheduled_reports_on_next_run_at ON public.scheduled_reports USING btree (next_run_at) WHERE ((enabled = true) AND (next_run_at IS NOT NULL));
+
+
+--
+-- Name: index_scheduled_reports_on_org_path; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_scheduled_reports_on_org_path ON public.scheduled_reports USING gist (org_path);
+
+
+--
+-- Name: index_scheduled_reports_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_scheduled_reports_on_organization_id ON public.scheduled_reports USING btree (organization_id);
 
 
 --
@@ -1763,6 +1819,20 @@ CREATE TRIGGER trg_organizations_touch_updated_at BEFORE UPDATE ON public.organi
 
 
 --
+-- Name: scheduled_reports trg_scheduled_reports_populate_org_path; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_scheduled_reports_populate_org_path BEFORE INSERT OR UPDATE OF organization_id ON public.scheduled_reports FOR EACH ROW EXECUTE FUNCTION app.populate_tenant_org_path();
+
+
+--
+-- Name: scheduled_reports trg_scheduled_reports_touch_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_scheduled_reports_touch_updated_at BEFORE UPDATE ON public.scheduled_reports FOR EACH ROW EXECUTE FUNCTION app.touch_updated_at();
+
+
+--
 -- Name: sites trg_sites_populate_org_path; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1900,6 +1970,14 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: scheduled_reports scheduled_reports_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduled_reports
+    ADD CONSTRAINT scheduled_reports_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: sites sites_organization_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1954,6 +2032,12 @@ ALTER TABLE public.cases ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: scheduled_reports; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.scheduled_reports ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: sites; Type: ROW SECURITY; Schema: public; Owner: -
@@ -2032,6 +2116,13 @@ CREATE POLICY tenant_visibility ON public.organizations TO app_user USING (app.c
 
 
 --
+-- Name: scheduled_reports tenant_visibility; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_visibility ON public.scheduled_reports TO app_user USING (app.can_see(org_path)) WITH CHECK (app.can_see(org_path));
+
+
+--
 -- Name: sites tenant_visibility; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2107,6 +2198,8 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260507200000'),
+('20260507120000'),
 ('20260506190100'),
 ('20260506190000'),
 ('20260506143000'),

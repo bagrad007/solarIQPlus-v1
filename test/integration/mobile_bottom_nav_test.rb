@@ -96,12 +96,11 @@ class MobileBottomNavTest < ActionDispatch::IntegrationTest
 
   # Mirror ApplicationHelper#nav_items so the test doesn't drift if the
   # persona-specific item set changes — but stays decoupled from the helper's
-  # exact paths. After the Alarms tab landed (Plan A wave 2): Maverick = 5,
-  # Partner = 5, Customer = 4.
+  # exact paths. Maverick / Partner include Reports; Customer includes Reports.
   def nav_items_count_for(user)
     case user.organization.org_type
-    when "maverick", "partner" then 5
-    when "customer"            then 4
+    when "maverick", "partner" then 6
+    when "customer"            then 5
     end
   end
 end
