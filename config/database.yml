@@ -77,5 +77,24 @@ test:
 # Connection URLs for non-primary databases can also be configured using
 # environment variables. The variable name is formed by concatenating the
 # connection name with `_DATABASE_URL`. For example:
+#
+#   CACHE_DATABASE_URL="postgres://cacheuser:cachepass@localhost/cachedatabase"
+#
+# Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
+# for a full overview on how database connection configuration can be specified.
+#
+# Production uses DATABASE_URL only (Railway). `ENV.fetch` runs only when
+# RAILS_ENV is production so development can boot without DATABASE_URL set.
+# Propshaft `assets:precompile` loads the full app in production — supply DATABASE_URL
+# at build time (Dockerfile inline env, or Railway Variables for Nixpacks).
+<% production_database_url = (ENV["RAILS_ENV"] == "production") ? ENV.fetch("DATABASE_URL") : ENV["DATABASE_URL"] %>
 production:
-  url: <%= ENV.fetch("DATABASE_URL") %>
+  primary: &primary_production
+    <<: *default
+    url: <%= production_database_url %>
+  cache:
+    <<: *primary_production
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    migrations_paths: db/queue_migrate

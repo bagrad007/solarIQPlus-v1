@@ -43,5 +43,8 @@ module SolarIqPlusV1
     # custom types, RLS policies, FORCE RLS, or our trigger functions. Dump to
     # db/structure.sql so the schema round-trips faithfully.
     config.active_record.schema_format = :sql
+
+    # Propshaft precompile loads the full Rails env (no Sprockets-style initialize_on_precompile).
+    # Production builds need DATABASE_URL during that step (see Dockerfile / Railway variables).
   end
 end
