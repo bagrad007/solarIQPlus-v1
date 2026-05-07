@@ -19,7 +19,6 @@ default: &default
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
 
-
 development:
   <<: *default
   database: solar_iq_plus_v1_development
@@ -78,22 +77,5 @@ test:
 # Connection URLs for non-primary databases can also be configured using
 # environment variables. The variable name is formed by concatenating the
 # connection name with `_DATABASE_URL`. For example:
-#
-#   CACHE_DATABASE_URL="postgres://cacheuser:cachepass@localhost/cachedatabase"
-#
-# Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
-# for a full overview on how database connection configuration can be specified.
-#
-# Production (e.g. Railway): connect only via DATABASE_URL (TCP). No host/socket/password
-# keys here — omitting DATABASE_URL in production will fail at boot, which is intentional.
-# Solid Cache and Solid Queue use the same URL and separate migration paths.
 production:
-  primary: &primary_production
-    <<: *default
-    url: <%= ENV["DATABASE_URL"] %>
-  cache:
-    <<: *primary_production
-    migrations_paths: db/cache_migrate
-  queue:
-    <<: *primary_production
-    migrations_paths: db/queue_migrate
+  url: <%= ENV.fetch("DATABASE_URL") %>
