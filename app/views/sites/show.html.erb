@@ -12,17 +12,28 @@
 <%
   firing_count = @firing_alarms_count.to_i
   badge_variant = firing_count.zero? ? "quiet" : "active"
+
+  header_actions = capture do
+    concat(link_to site_diagnostics_path(@site),
+                   class: "group inline-flex items-center gap-xs rounded-full bg-primary-container px-md py-sm text-label-md text-on-primary-container shadow-sm transition-[background-color,color,transform] duration-150 hover:bg-primary hover:text-on-primary active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                   data: { testid: "site-diagnostics-cta" },
+                   aria: { label: "Open diagnostics for #{@site.name}" } do
+            tag.span("monitoring", class: "material-symbols-outlined text-base", "aria-hidden": true) +
+            tag.span("Diagnostics", class: "tracking-wide")
+          end)
+    concat(link_to(alarms_path(site_id: @site.id, status: ["firing"]),
+                   class: "alarm-badge alarm-badge--#{badge_variant}",
+                   data: { testid: "site-firing-alarms-badge" }) {
+             tag.span("notifications_active", class: "material-symbols-outlined", "aria-hidden": true) +
+             tag.span(pluralize(firing_count, "firing alarm"))
+           })
+  end
 %>
 
 <%= render "shared/page_header",
            title: @site.name,
            subtitle: "Operational dashboard",
-           actions: link_to(alarms_path(site_id: @site.id, status: ["firing"]),
-                            class: "alarm-badge alarm-badge--#{badge_variant}",
-                            data: { testid: "site-firing-alarms-badge" }) {
-             tag.span("notifications_active", class: "material-symbols-outlined", "aria-hidden": true) +
-             tag.span(pluralize(firing_count, "firing alarm"))
-           } %>
+           actions: header_actions %>
 
 <% dashboard_payload = @summary.merge(forecast: @forecast) %>
 

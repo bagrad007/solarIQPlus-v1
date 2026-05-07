@@ -106,6 +106,18 @@ class SitesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "show renders a Diagnostics CTA in the page header" do
+    sign_in_as(@northwind_user)
+
+    get site_path(@site_a)
+
+    assert_response :success
+    assert_select "header a[href=?][data-testid='site-diagnostics-cta']",
+                  site_diagnostics_path(@site_a),
+                  count: 1,
+                  text: /Diagnostics/i
+  end
+
   test "show no longer renders the per-site Edit Site / New Case CTAs in the page header" do
     sign_in_as(@northwind_user)
 

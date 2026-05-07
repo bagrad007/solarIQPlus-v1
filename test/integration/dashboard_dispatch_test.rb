@@ -25,6 +25,15 @@ class DashboardDispatchTest < ActionDispatch::IntegrationTest
     assert_select "h1", text: @northwind.name
   end
 
+  test "Customer sites dashboard links each site to its diagnostics page" do
+    plant_b = Site.create!(organization: @northwind, name: "Plant B", polling_interval_seconds: 30)
+    sign_in_as(@northwind_user)
+    get dashboard_path
+    assert_response :success
+    assert_select "a[href=?]", site_diagnostics_path(@site_a), text: /Diagnostics/i
+    assert_select "a[href=?]", site_diagnostics_path(plant_b), text: /Diagnostics/i
+  end
+
   test "Customer with exactly one site is redirected to that site" do
     sign_in_as(@northwind_user)
     get dashboard_path

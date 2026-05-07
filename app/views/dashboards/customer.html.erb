@@ -21,9 +21,8 @@
 <% else %>
   <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-lg">
     <% @site_summaries.each do |s| %>
-      <%# Stretched-link card: the whole card surface routes to site_path; the
-          corner Edit link (z-10) routes to edit_site_path. Avoids nesting
-          `<a>` tags inside an outer link. %>
+      <%# Stretched-link card: whole card → site_path; Diagnostics & Edit (z-10)
+          sit above overlay. No nested `<a>`. %>
       <div class="group relative flex h-full min-h-0 flex-col bg-surface-container-lowest rounded-lg border border-outline-variant p-lg hover:border-primary transition-colors">
         <%= link_to "", site_path(s[:site]),
                     class: "absolute inset-0 rounded-lg",
@@ -48,13 +47,16 @@
           </p>
         <% end %>
 
-        <% unless Current.in_view_as? %>
-          <div class="mt-auto pt-md flex justify-end">
+        <div class="mt-auto pt-md flex flex-wrap justify-end gap-sm">
+          <%= link_to "Diagnostics", site_diagnostics_path(s[:site]),
+                      class: "relative z-10 inline-flex items-center gap-xs rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-1 text-label-sm text-on-surface hover:bg-surface-container active:opacity-90",
+                      aria: { label: "Diagnostics for #{s[:site].name}" } %>
+          <% unless Current.in_view_as? %>
             <%= link_to "Edit Site", edit_site_path(s[:site]),
-                        class: "relative z-10 inline-flex items-center gap-xs rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-1 text-label-sm text-on-surface hover:bg-surface-container",
+                        class: "relative z-10 inline-flex items-center gap-xs rounded-md border border-outline-variant bg-surface-container-lowest px-sm py-1 text-label-sm text-on-surface hover:bg-surface-container active:opacity-90",
                         aria: { label: "Edit #{s[:site].name}" } %>
-          </div>
-        <% end %>
+          <% end %>
+        </div>
       </div>
     <% end %>
   </div>
