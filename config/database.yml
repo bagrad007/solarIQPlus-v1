@@ -84,17 +84,29 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+# Railway and other PaaS inject DATABASE_URL (TCP). Without host/url, PostgreSQL
+# uses a local Unix socket — fine on a Mac with Homebrew Postgres, broken in a container.
+# When DATABASE_URL is set, Solid Cache/Queue share that single database (typical one-addon setup).
+# For separate DBs per role (e.g. Kamal), omit DATABASE_URL and use credentials below.
 production:
   primary: &primary_production
     <<: *default
+<% if ENV["DATABASE_URL"].present? %>
+    url: <%= ENV["DATABASE_URL"] %>
+<% else %>
     database: solar_iq_plus_v1_production
     username: solar_iq_plus_v1
     password: <%= ENV["SOLAR_IQ_PLUS_V1_DATABASE_PASSWORD"] %>
+<% end %>
   cache:
     <<: *primary_production
+<% unless ENV["DATABASE_URL"].present? %>
     database: solar_iq_plus_v1_production_cache
+<% end %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
+<% unless ENV["DATABASE_URL"].present? %>
     database: solar_iq_plus_v1_production_queue
+<% end %>
     migrations_paths: db/queue_migrate
